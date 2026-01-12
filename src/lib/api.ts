@@ -1,8 +1,6 @@
 import axios from 'axios';
 
-// 1. Point to your Render Backend
-// Ideally, put this in .env.local as NEXT_PUBLIC_API_URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://YOUR-RENDER-URL.onrender.com/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qubitgyan-backend.onrender.com/api/v1';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -11,16 +9,40 @@ export const api = axios.create({
   },
 });
 
-// 2. Add a helper to handle errors cleanly
+// --- NEW: Request Interceptor ---
+// Before sending ANY request, check if we have a token
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+// --- NEW: Response Interceptor ---
+// If the backend says "401 Unauthorized" (Token expired/invalid), kick user to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      if (typeof window !== 'undefined') {
+        // Only redirect if we are not already on the login page
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const handleApiError = (error: any) => {
   console.error('API Error:', error);
   if (error.response) {
-    // Server responded with an error (4xx, 5xx)
-    throw new Error(error.response.data.detail || 'Server error occurred');
-  } else if (error.request) {
-    // Request made but no response (Network error)
-    throw new Error('Cannot reach the server. Check your connection.');
+    throw new Error(error.response.data.detail || JSON.stringify(error.response.data) || 'Server error');
   } else {
-    throw new Error(error.message);
+    throw new Error(error.message || 'Network Error');
   }
 };

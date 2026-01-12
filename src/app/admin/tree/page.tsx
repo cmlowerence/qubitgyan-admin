@@ -1,22 +1,31 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getKnowledgeTree, createKnowledgeNode } from '@/services/tree'; // Import create
+import { FolderTree, AlertCircle, RefreshCw, Plus } from 'lucide-react';
+
+// Services & Types
+import { getKnowledgeTree, createKnowledgeNode } from '@/services/tree';
 import { KnowledgeNode, CreateNodePayload } from '@/types/tree';
-import { FolderTree, Loader2, AlertCircle, RefreshCw, Plus } from 'lucide-react';
+
+// Components
+import LoadingScreen from '@/components/ui/loading-screen';
+import CreateNodeModal from '@/components/tree/CreateNodeModal';
 import DebugConsole from '@/components/debug/DebugConsole';
-import CreateNodeModal from '@/components/tree/CreateNodeModal'; // Import Component
 
 export default function TreeManagementPage() {
+  // Data State
   const [nodes, setNodes] = useState<KnowledgeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Debug State
   const [debugData, setDebugData] = useState<any>(null);
 
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Initial Fetch
   useEffect(() => {
     loadTreeData();
   }, []);
@@ -29,15 +38,18 @@ export default function TreeManagementPage() {
 
       const data = await getKnowledgeTree();
       
+      // Defensive check: Ensure data is an array before setting state
       if (Array.isArray(data)) {
         setNodes(data);
       } else {
-        throw new Error(`Service returned invalid format: ${typeof data}`);
+        throw new Error(`Invalid data format. Expected Array, got: ${typeof data}`);
       }
 
     } catch (err: any) {
       console.error("Tree Fetch Error:", err);
       setError(err.message || 'Failed to load knowledge tree');
+      
+      // Capture full error details for the Debug Console
       setDebugData({
         message: err.message,
         name: err.name,
@@ -46,21 +58,21 @@ export default function TreeManagementPage() {
         responseData: err.response?.data,
         targetUrl: process.env.NEXT_PUBLIC_API_URL, 
       });
-      setNodes([]);
+      
+      setNodes([]); // Clear data on error to prevent crashes
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Logic to handle Modal Submit
   const handleCreateNode = async (payload: CreateNodePayload) => {
     try {
       setIsCreating(true);
-      // 1. Call API
+      // 1. Send request to backend
       await createKnowledgeNode(payload);
-      // 2. Refresh List
+      // 2. Refresh the list to show new item
       await loadTreeData();
-      // 3. Close Modal
+      // 3. Close modal
       setIsCreateModalOpen(false);
     } catch (err: any) {
       alert(`Failed to create node: ${err.message}`);
@@ -69,10 +81,17 @@ export default function TreeManagementPage() {
     }
   };
 
+  // --- RENDER START ---
+
+  // 1. Full Screen Loader
+  if (isLoading) {
+    return <LoadingScreen message="Loading Knowledge Tree..." />;
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6 pb-20">
       
-      {/* Header with Actions */}
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
@@ -83,14 +102,16 @@ export default function TreeManagementPage() {
         </div>
         
         <div className="flex gap-2 w-full md:w-auto">
+          {/* Refresh Button */}
           <button 
               onClick={loadTreeData}
-              disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium bg-white border border-slate-200 hover:bg-slate-50 rounded-md shadow-sm transition-colors active:scale-95 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium bg-white border border-slate-200 hover:bg-slate-50 rounded-md shadow-sm transition-colors active:scale-95"
+              title="Refresh Data"
           >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className="w-4 h-4" />
           </button>
           
+          {/* Add Domain Button */}
           <button 
               onClick={() => setIsCreateModalOpen(true)}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-all active:scale-95"
@@ -101,9 +122,9 @@ export default function TreeManagementPage() {
         </div>
       </div>
 
-      {/* Error UI */}
+      {/* Error Banner (Simple UI) */}
       {error && (
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg flex items-start gap-3 border border-red-200">
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg flex items-start gap-3 border border-red-200 animate-in slide-in-from-top-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-semibold">Failed to load data</p>
@@ -112,75 +133,80 @@ export default function TreeManagementPage() {
         </div>
       )}
 
-      {/* Main Content */}
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-          <Loader2 className="w-10 h-10 animate-spin text-blue-500 mb-2" />
-          <p className="text-sm">Connecting to Backend...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Main Grid Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Left Column: Visual List */}
+        <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden min-h-[300px]">
+          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+            <h2 className="font-semibold text-slate-700 text-sm">Visual Tree</h2>
+          </div>
           
-          {/* Visual List */}
-          <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden min-h-[300px]">
-            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-              <h2 className="font-semibold text-slate-700 text-sm">Visual Tree</h2>
-            </div>
-            <div className="p-4">
-              {nodes.length === 0 ? (
-                <div className="text-center py-10">
-                  <p className="text-slate-400 mb-2">Database is empty.</p>
-                  <button 
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="text-blue-600 hover:underline text-sm font-medium"
-                  >
-                    Create your first Domain
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {nodes.map((node) => (
-                    <div key={node.id} className="p-3 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors flex justify-between items-center group">
-                      <div className="flex items-center gap-3">
-                        {node.thumbnail_url ? (
-                          <div className="w-8 h-8 rounded bg-slate-200 flex-shrink-0 overflow-hidden">
-                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                             <img src={node.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-300">
-                            <FolderTree className="w-4 h-4" />
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-medium text-slate-700 text-sm">{node.name}</p>
-                          <p className="text-xs text-slate-400">{node.resource_count || 0} resources</p>
+          <div className="p-4">
+            {nodes.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-slate-400 mb-2">Database is empty.</p>
+                <button 
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="text-blue-600 hover:underline text-sm font-medium"
+                >
+                  Create your first Domain
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {nodes.map((node) => (
+                  <div key={node.id} className="p-3 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors flex justify-between items-center group">
+                    <div className="flex items-center gap-3">
+                      {/* Thumbnail or Placeholder */}
+                      {node.thumbnail_url ? (
+                        <div className="w-8 h-8 rounded bg-slate-200 flex-shrink-0 overflow-hidden border border-slate-200">
+                           {/* eslint-disable-next-line @next/next/no-img-element */}
+                           <img src={node.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-300">
+                          <FolderTree className="w-4 h-4" />
+                        </div>
+                      )}
+                      
+                      {/* Node Info */}
+                      <div>
+                        <p className="font-medium text-slate-700 text-sm">{node.name}</p>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400">Order: {node.order}</span>
+                            <span className="text-xs text-slate-300">•</span>
+                            <span className="text-xs text-slate-400">{node.resource_count || 0} resources</span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold tracking-wider uppercase bg-blue-50 text-blue-600 px-2 py-1 rounded">
-                        {node.node_type}
-                      </span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* JSON Preview */}
-          <div className="border border-slate-200 rounded-xl bg-slate-900 text-slate-300 overflow-hidden flex flex-col max-h-[500px]">
-            <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex justify-between items-center">
-              <h2 className="font-mono text-xs font-bold text-slate-400 uppercase tracking-wider">Backend Response</h2>
-              <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-500">JSON</span>
-            </div>
-            <div className="p-4 overflow-auto font-mono text-xs">
-              <pre>{JSON.stringify(nodes, null, 2)}</pre>
-            </div>
+                    {/* Node Type Badge */}
+                    <span className="text-[10px] font-bold tracking-wider uppercase bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">
+                      {node.node_type}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Components */}
+        {/* Right Column: JSON Preview (For Verification) */}
+        <div className="border border-slate-200 rounded-xl bg-slate-900 text-slate-300 overflow-hidden flex flex-col max-h-[500px]">
+          <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex justify-between items-center">
+            <h2 className="font-mono text-xs font-bold text-slate-400 uppercase tracking-wider">Backend Response</h2>
+            <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-500">JSON</span>
+          </div>
+          <div className="p-4 overflow-auto font-mono text-xs custom-scrollbar">
+            <pre>{JSON.stringify(nodes, null, 2)}</pre>
+          </div>
+        </div>
+
+      </div>
+
+      {/* --- MODALS & DEBUGGERS --- */}
+      
       <CreateNodeModal 
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
@@ -188,7 +214,9 @@ export default function TreeManagementPage() {
         isLoading={isCreating}
       />
       
+      {/* Only shows if there is an error object present */}
       <DebugConsole error={debugData} />
+
     </div>
   );
 }
