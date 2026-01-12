@@ -14,7 +14,6 @@ export function MobileNav() {
     setIsOpen(false);
   }, [pathname]);
 
-  // Lock body scroll
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -38,7 +37,7 @@ export function MobileNav() {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Dark Overlay */}
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -47,17 +46,16 @@ export function MobileNav() {
               className="fixed inset-0 z-[99] bg-black/60 backdrop-blur-sm"
             />
             
-            {/* Sidebar Container */}
+            {/* FIX: Changed h-full to h-[100dvh] 
+               This forces it to take the full dynamic height of the mobile screen.
+            */}
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              // FIXED: z-[100] to sit above everything
-              // FIXED: Hardcoded 'bg-white' instead of variable to ensure opacity
-              className="fixed left-0 top-0 z-[100] h-full w-[280px] bg-white dark:bg-slate-950 shadow-2xl flex flex-col border-r border-slate-200"
+              className="fixed left-0 top-0 bottom-0 z-[100] w-[280px] h-[100dvh] bg-white dark:bg-slate-950 shadow-2xl flex flex-col border-r border-slate-200"
             >
-              {/* Close Button */}
               <div className="absolute right-4 top-4 z-[101]">
                  <button 
                   onClick={() => setIsOpen(false)}
@@ -67,8 +65,7 @@ export function MobileNav() {
                 </button>
               </div>
               
-              {/* Sidebar Content */}
-              <div className="h-full pt-2">
+              <div className="flex-1 h-full pt-2">
                  <AdminSidebar className="h-full w-full border-none shadow-none bg-transparent" />
               </div>
             </motion.div>
