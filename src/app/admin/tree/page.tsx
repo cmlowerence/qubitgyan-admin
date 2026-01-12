@@ -4,16 +4,15 @@ import { useEffect, useState } from 'react';
 import { getKnowledgeTree } from '@/services/tree';
 import { KnowledgeNode } from '@/types/tree';
 import { FolderTree, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import DebugConsole from '@/components/debug/DebugConsole'; // Import the new component
 
 export default function TreeManagementPage() {
   const [nodes, setNodes] = useState<KnowledgeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Simple error message for the UI
   const [error, setError] = useState<string | null>(null);
   
-  // Detailed error object for the Mobile Debug Console
-  const [debugError, setDebugError] = useState<any>(null);
+  // State for the Debug Console
+  const [debugData, setDebugData] = useState<any>(null);
 
   useEffect(() => {
     loadTreeData();
@@ -23,43 +22,39 @@ export default function TreeManagementPage() {
     try {
       setIsLoading(true);
       setError(null);
-      setDebugError(null);
-
-      console.log("Attempting fetch from:", process.env.NEXT_PUBLIC_API_URL);
+      setDebugData(null);
 
       const data = await getKnowledgeTree();
       
-      // DEFENSIVE CHECK: Ensure we actually got a list
+      // Since the service now handles unwrapping, we can trust 'data' is an array
       if (Array.isArray(data)) {
         setNodes(data);
       } else {
-        throw new Error(`Invalid data format. Expected Array, got: ${typeof data}`);
+        throw new Error(`Service returned invalid format: ${typeof data}`);
       }
 
     } catch (err: any) {
       console.error("Tree Fetch Error:", err);
       setError(err.message || 'Failed to load knowledge tree');
       
-      // Capture FULL error details for the mobile screen
-      setDebugError({
+      // Capture details for the Debug Console
+      setDebugData({
         message: err.message,
         name: err.name,
-        // If Axios error, capture response details
         status: err.response?.status,
         statusText: err.response?.statusText,
         responseData: err.response?.data,
-        // Config details to see where we tried to go
         targetUrl: process.env.NEXT_PUBLIC_API_URL, 
       });
       
-      setNodes([]); // Clear data to prevent UI crashes
+      setNodes([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6 pb-20"> {/* pb-20 gives space for debug box */}
+    <div className="p-4 md:p-6 space-y-6 pb-20">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -80,7 +75,7 @@ export default function TreeManagementPage() {
         </button>
       </div>
 
-      {/* ERROR BANNER (Simple UI version) */}
+      {/* User-Friendly Error Banner */}
       {error && (
         <div className="bg-red-50 text-red-700 p-4 rounded-lg flex items-start gap-3 border border-red-200">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -91,7 +86,7 @@ export default function TreeManagementPage() {
         </div>
       )}
 
-      {/* MAIN CONTENT AREA */}
+      {/* Main Content */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-16 text-slate-400">
           <Loader2 className="w-10 h-10 animate-spin text-blue-500 mb-2" />
@@ -101,7 +96,7 @@ export default function TreeManagementPage() {
         /* Only render if NOT loading */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* LEFT: The List Visualization */}
+          {/* List Visualization */}
           <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden min-h-[300px]">
             <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
               <h2 className="font-semibold text-slate-700 text-sm">Visual Tree</h2>
@@ -110,15 +105,14 @@ export default function TreeManagementPage() {
             <div className="p-4">
               {nodes.length === 0 ? (
                 <div className="text-center py-10">
-                  <p className="text-slate-400 mb-2">Database is empty or unreachable.</p>
-                  {!error && <span className="text-xs text-slate-300">Try adding a node via backend admin first.</span>}
+                  <p className="text-slate-400 mb-2">Database is empty.</p>
+                  {!error && <span className="text-xs text-slate-300">Great! We are connected. Ready to add nodes.</span>}
                 </div>
               ) : (
                 <div className="space-y-2">
                   {nodes.map((node) => (
                     <div key={node.id} className="p-3 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors flex justify-between items-center group">
                       <div className="flex items-center gap-3">
-                         {/* Thumbnail Indicator */}
                         {node.thumbnail_url ? (
                           <div className="w-8 h-8 rounded bg-slate-200 flex-shrink-0 overflow-hidden">
                              {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -129,13 +123,11 @@ export default function TreeManagementPage() {
                             <FolderTree className="w-4 h-4" />
                           </div>
                         )}
-                        
                         <div>
                           <p className="font-medium text-slate-700 text-sm">{node.name}</p>
                           <p className="text-xs text-slate-400">{node.resource_count || 0} resources</p>
                         </div>
                       </div>
-
                       <span className="text-[10px] font-bold tracking-wider uppercase bg-blue-50 text-blue-600 px-2 py-1 rounded">
                         {node.node_type}
                       </span>
@@ -146,7 +138,7 @@ export default function TreeManagementPage() {
             </div>
           </div>
 
-          {/* RIGHT: Raw JSON (To confirm data structure) */}
+          {/* Raw JSON Preview */}
           <div className="border border-slate-200 rounded-xl bg-slate-900 text-slate-300 overflow-hidden flex flex-col max-h-[500px]">
             <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex justify-between items-center">
               <h2 className="font-mono text-xs font-bold text-slate-400 uppercase tracking-wider">Backend Response</h2>
@@ -160,37 +152,8 @@ export default function TreeManagementPage() {
         </div>
       )}
 
-      {/* --- MOBILE DEBUG CONSOLE (THE BLACK BOX) --- */}
-      {/* This only appears if there is a detailed error to show */}
-      {debugError && (
-        <div className="mt-8 p-4 bg-black text-green-400 font-mono text-xs rounded-lg overflow-hidden break-all border-2 border-red-500 shadow-2xl">
-          <h3 className="text-white font-bold mb-2 border-b border-gray-700 pb-1 flex justify-between">
-            <span>🐞 DEBUG CONSOLE</span>
-            <span className="text-red-500">ERROR DETECTED</span>
-          </h3>
-          
-          <div className="space-y-2">
-            <p><strong className="text-yellow-400">Target URL:</strong> {debugError.targetUrl || "Undefined (Check .env)"}</p>
-            <p><strong className="text-yellow-400">Error Name:</strong> {debugError.name}</p>
-            <p><strong className="text-yellow-400">Message:</strong> {debugError.message}</p>
-            
-            {debugError.status && (
-              <p className="bg-red-900/30 p-1 rounded">
-                <strong className="text-yellow-400">HTTP Status:</strong> {debugError.status} {debugError.statusText}
-              </p>
-            )}
-
-            {debugError.responseData && (
-              <div className="mt-2 pt-2 border-t border-gray-800 opacity-90">
-                <strong className="text-yellow-400 block mb-1">Server Response Body:</strong>
-                <pre className="whitespace-pre-wrap bg-gray-900 p-2 rounded text-[10px]">
-                  {JSON.stringify(debugError.responseData, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Modular Debug Console - Will only show if there is an error */}
+      <DebugConsole error={debugData} />
 
     </div>
   );
