@@ -1,10 +1,11 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
+import type { Config } from "tailwindcss";
+
+const config: Config = {
   darkMode: ["class"],
   content: [
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",    // Safety check for root app
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",  // Safety check for root pages
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
@@ -23,11 +24,11 @@ module.exports = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#0F172A",
+          DEFAULT: "#0F172A", // Quantum Navy
           foreground: "#F8FAFC",
         },
         secondary: {
-          DEFAULT: "#F59E0B",
+          DEFAULT: "#F59E0B", // Knowledge Gold
           foreground: "#0F172A",
         },
         destructive: {
@@ -60,3 +61,4 @@ module.exports = {
   },
   plugins: [require("tailwindcss-animate")],
 };
+export default config;
