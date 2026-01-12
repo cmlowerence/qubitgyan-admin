@@ -2,21 +2,25 @@
 
 import React from 'react';
 import { Bell, Search } from 'lucide-react';
+import { MobileNav } from './mobile-nav'; // <--- Import this
 
 export function AdminHeader() {
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-background/80 px-4 md:px-6 backdrop-blur">
       <div className="flex items-center gap-4">
+        {/* Mobile Menu Trigger */}
+        <MobileNav />
+        
         <h2 className="text-lg font-semibold text-foreground">God Mode</h2>
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Search Bar (Visual only for now) */}
+        {/* Search Bar (Hidden on mobile) */}
         <div className="relative hidden md:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search anything..."
+            placeholder="Search..."
             className="h-9 w-64 rounded-md border border-input bg-background pl-9 pr-4 text-sm outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
