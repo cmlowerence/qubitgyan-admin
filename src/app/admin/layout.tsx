@@ -1,6 +1,6 @@
-import React from 'react';
-import { AdminSidebar } from '@/components/layout/sidebar';
-import { AdminHeader } from '@/components/layout/header';
+import { AdminSidebar } from "@/components/sidebar";
+import { MobileNav } from "@/components/mobile-nav";
+import AuthGuard from "@/components/auth/AuthGuard"; // Import it
 
 export default function AdminLayout({
   children,
@@ -8,19 +8,30 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Desktop Sidebar: We manually make it fixed here */}
-      <div className="hidden md:block fixed left-0 top-0 h-screen w-64 z-40">
-        <AdminSidebar className="h-full" />
-      </div>
+    // Wrap everything in AuthGuard
+    <AuthGuard>
+      <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-900">
+        {/* Sidebar for Desktop */}
+        <div className="hidden md:flex w-[280px] flex-col fixed inset-y-0 z-50">
+          <AdminSidebar />
+        </div>
 
-      {/* Main Content: Pushed by 64 (16rem/256px) on desktop */}
-      <div className="md:ml-64 min-h-screen flex flex-col">
-        <AdminHeader />
-        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
-          {children}
+        {/* Main Content Area */}
+        <main className="flex-1 md:pl-[280px] h-full flex flex-col relative">
+          
+          {/* Mobile Header */}
+          <div className="md:hidden flex items-center justify-between p-4 border-b bg-white dark:bg-slate-950 shrink-0 sticky top-0 z-40">
+            <span className="font-bold text-lg">Admin Panel</span>
+            <MobileNav />
+          </div>
+
+          {/* Scrollable Page Content */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 relative">
+            {children}
+          </div>
+          
         </main>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

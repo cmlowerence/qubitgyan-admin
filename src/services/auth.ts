@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { api, handleApiError } from '@/lib/api';
 
 interface LoginResponse {
@@ -5,28 +6,39 @@ interface LoginResponse {
   refresh: string;
 }
 
+// Helper to get the base URL without the '/v1' part if needed
+const BASE_DOMAIN = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'https://qubitgyan-api.onrender.com';
+
 export const loginAdmin = async (username: string, password: string) => {
   try {
-    // Note: This endpoint must match your backend URL structure
-    // Based on your memory prompt, it is likely '/auth/token/' or '/token/' 
-    // Let's try the standard SimpleJWT path usually set in urls.py
-    const response = await api.post<LoginResponse>('/auth/token/', {
+    // FIX: Using a direct axios call to avoid the '/v1' prefix issue
+    // We try the standard SimpleJWT path: /api/token/
+    const response = await axios.post<LoginResponse>(`${BASE_DOMAIN}/api/token/`, {
       username,
       password,
     });
     
-    // Save tokens to LocalStorage
-    localStorage.setItem('access_token', response.data.access);
-    localStorage.setItem('refresh_token', response.data.refresh);
+    if (response.data.access) {
+      localStorage.setItem('access_token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
+      return true;
+    }
     
-    return true;
+    return false;
   } catch (error) {
     throw handleApiError(error);
   }
 };
 
 export const logoutAdmin = () => {
+  // 1. Remove Tokens
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+  // 2. Force Redirect
   window.location.href = '/login';
+};
+
+export const isAuthenticated = () => {
+  if (typeof window === 'undefined') return false;
+  return !!localStorage.getItem('access_token');
 };
