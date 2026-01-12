@@ -9,15 +9,15 @@ export default function AdminLayout({
 }) {
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Desktop Sidebar (Hidden on Mobile) */}
-      <div className="hidden md:block">
-        <AdminSidebar />
+      {/* Desktop Sidebar: We manually make it fixed here */}
+      <div className="hidden md:block fixed left-0 top-0 h-screen w-64 z-40">
+        <AdminSidebar className="h-full" />
       </div>
 
-      {/* Main Content (Full width on mobile, pushed on desktop) */}
-      <div className="md:ml-64 transition-all duration-300 ease-in-out">
+      {/* Main Content: Pushed by 64 (16rem/256px) on desktop */}
+      <div className="md:ml-64 min-h-screen flex flex-col">
         <AdminHeader />
-        <main className="p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
           {children}
         </main>
       </div>
