@@ -1,9 +1,11 @@
-import type { Config } from "tailwindcss";
-
-const config: Config = {
-    darkMode: ["class"],
-    content: [
-    "./src/**/*.{ts,tsx}",
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: [
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     container: {
@@ -21,11 +23,11 @@ const config: Config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#0F172A", // Quantum Navy
+          DEFAULT: "#0F172A",
           foreground: "#F8FAFC",
         },
         secondary: {
-          DEFAULT: "#F59E0B", // Knowledge Gold
+          DEFAULT: "#F59E0B",
           foreground: "#0F172A",
         },
         destructive: {
@@ -40,6 +42,14 @@ const config: Config = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -50,4 +60,3 @@ const config: Config = {
   },
   plugins: [require("tailwindcss-animate")],
 };
-export default config;
