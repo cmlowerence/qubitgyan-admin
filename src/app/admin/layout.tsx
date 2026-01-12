@@ -1,5 +1,5 @@
-import { AdminSidebar } from "@/components/sidebar";
-import { MobileNav } from "@/components/mobile-nav";
+import { AdminSidebar } from "@/components/layout/sidebar";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import AuthGuard from "@/components/auth/AuthGuard"; // Import it
 
 export default function AdminLayout({
