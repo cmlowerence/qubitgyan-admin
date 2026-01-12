@@ -5,13 +5,24 @@ export interface KnowledgeNode {
   name: string;
   node_type: NodeType;
   parent: number | null;
-  children?: KnowledgeNode[]; // Recursive structure
-  order?: number;
-  is_active?: boolean;
+  order: number;            // NEW: Backend now supports ordering
+  thumbnail_url?: string;   // NEW: Backend now supports thumbnails
+  is_active: boolean;
+  children?: KnowledgeNode[];
+  resource_count?: number;  // NEW: Backend sends this count
 }
 
 export interface CreateNodePayload {
   name: string;
   node_type: NodeType;
   parent?: number | null;
+  order?: number;
+  thumbnail_url?: string;
+}
+
+export interface UpdateNodePayload {
+  name?: string;
+  order?: number;
+  thumbnail_url?: string;
+  is_active?: boolean;
 }
