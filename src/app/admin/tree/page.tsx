@@ -70,7 +70,7 @@ export default function TreeEditorPage() {
               key={node.id}
               node={node}
               level={0}
-              isExpanded={expanded.has(node.id)}
+              expandedIds={expanded}
               onToggle={toggleNode}
               onAddChild={handleAddChild}
             />
