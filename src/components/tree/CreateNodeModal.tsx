@@ -1,141 +1,131 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
-import { NodeType, CreateNodePayload } from '@/types/tree';
+import { useState } from 'react';
+import { X, Loader2, Image as ImageIcon } from 'lucide-react';
+import { CreateNodePayload, NodeType } from '@/types/tree';
 
 interface CreateNodeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: CreateNodePayload) => Promise<void>;
-  parentId: number | null;
-  parentName?: string; // To show "Adding child to Physics"
-  suggestedType: NodeType;
+  isLoading: boolean;
+  parentId?: number | null; // If null, we are creating a Root Domain
 }
 
-export function CreateNodeModal({ 
+export default function CreateNodeModal({ 
   isOpen, 
   onClose, 
   onSubmit, 
-  parentId, 
-  parentName,
-  suggestedType 
+  isLoading,
+  parentId = null 
 }: CreateNodeModalProps) {
   const [name, setName] = useState('');
-  const [type, setType] = useState<NodeType>(suggestedType);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Reset form when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setName('');
-      setType(suggestedType);
-      setIsSubmitting(false);
-    }
-  }, [isOpen, suggestedType]);
+  const [nodeType, setNodeType] = useState<NodeType>('DOMAIN');
+  const [thumbnail, setThumbnail] = useState('');
+  const [order, setOrder] = useState(0);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      await onSubmit({
-        name,
-        node_type: type,
-        parent: parentId
-      });
-      onClose();
-    } catch (error) {
-      console.error(error);
-      setIsSubmitting(false);
-    }
+    await onSubmit({
+      name,
+      node_type: nodeType,
+      parent: parentId,
+      thumbnail_url: thumbnail || undefined,
+      order
+    });
+    // Reset form on success (optional, or handle in parent)
+    setName('');
+    setThumbnail('');
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-          <div>
-            <h3 className="font-semibold text-lg">
-              {parentId ? 'Add Child Node' : 'Create New Domain'}
-            </h3>
-            {parentId && (
-              <p className="text-xs text-muted-foreground">
-                Under: <span className="font-medium text-primary">{parentName}</span>
-              </p>
-            )}
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <X size={20} />
+        <div className="flex justify-between items-center p-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-800">
+            {parentId ? 'Add Child Node' : 'Create New Domain'}
+          </h2>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
           
           {/* Name Input */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Node Name
-            </label>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500 uppercase">Name</label>
             <input
               type="text"
+              required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={parentId ? "e.g., Kinematics" : "e.g., Physics"}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
-              autoFocus
+              placeholder="e.g. Physics, Thermodynamics..."
+              className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
           </div>
 
-          {/* Type Selection */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Node Type
+          {/* Type Selector */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-500 uppercase">Type</label>
+              <select
+                value={nodeType}
+                onChange={(e) => setNodeType(e.target.value as NodeType)}
+                className="w-full p-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+              >
+                <option value="DOMAIN">Domain</option>
+                <option value="SUBJECT">Subject</option>
+                <option value="SECTION">Section</option>
+                <option value="TOPIC">Topic</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-500 uppercase">Order</label>
+              <input
+                type="number"
+                value={order}
+                onChange={(e) => setOrder(parseInt(e.target.value))}
+                className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Thumbnail Input */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500 uppercase flex items-center gap-1">
+              <ImageIcon className="w-3 h-3" /> Thumbnail URL
             </label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as NodeType)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-              <option value="DOMAIN">DOMAIN (Root Level)</option>
-              <option value="SUBJECT">SUBJECT</option>
-              <option value="SECTION">SECTION (Unit)</option>
-              <option value="TOPIC">TOPIC</option>
-            </select>
+            <input
+              type="url"
+              value={thumbnail}
+              onChange={(e) => setThumbnail(e.target.value)}
+              placeholder="https://..."
+              className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+            />
           </div>
 
           {/* Actions */}
-          <div className="pt-4 flex justify-end gap-3">
+          <div className="pt-4 flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+              className="flex-1 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !name.trim()}
-              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+              disabled={isLoading || !name}
+              className="flex-1 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
             >
-              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              Create Node
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Node'}
             </button>
           </div>
         </form>

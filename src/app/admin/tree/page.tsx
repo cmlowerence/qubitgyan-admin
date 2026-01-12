@@ -1,18 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getKnowledgeTree } from '@/services/tree';
-import { KnowledgeNode } from '@/types/tree';
-import { FolderTree, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import DebugConsole from '@/components/debug/DebugConsole'; // Import the new component
+import { getKnowledgeTree, createKnowledgeNode } from '@/services/tree'; // Import create
+import { KnowledgeNode, CreateNodePayload } from '@/types/tree';
+import { FolderTree, Loader2, AlertCircle, RefreshCw, Plus } from 'lucide-react';
+import DebugConsole from '@/components/debug/DebugConsole';
+import CreateNodeModal from '@/components/tree/CreateNodeModal'; // Import Component
 
 export default function TreeManagementPage() {
   const [nodes, setNodes] = useState<KnowledgeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // State for the Debug Console
   const [debugData, setDebugData] = useState<any>(null);
+
+  // Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     loadTreeData();
@@ -26,7 +29,6 @@ export default function TreeManagementPage() {
 
       const data = await getKnowledgeTree();
       
-      // Since the service now handles unwrapping, we can trust 'data' is an array
       if (Array.isArray(data)) {
         setNodes(data);
       } else {
@@ -36,8 +38,6 @@ export default function TreeManagementPage() {
     } catch (err: any) {
       console.error("Tree Fetch Error:", err);
       setError(err.message || 'Failed to load knowledge tree');
-      
-      // Capture details for the Debug Console
       setDebugData({
         message: err.message,
         name: err.name,
@@ -46,17 +46,33 @@ export default function TreeManagementPage() {
         responseData: err.response?.data,
         targetUrl: process.env.NEXT_PUBLIC_API_URL, 
       });
-      
       setNodes([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Logic to handle Modal Submit
+  const handleCreateNode = async (payload: CreateNodePayload) => {
+    try {
+      setIsCreating(true);
+      // 1. Call API
+      await createKnowledgeNode(payload);
+      // 2. Refresh List
+      await loadTreeData();
+      // 3. Close Modal
+      setIsCreateModalOpen(false);
+    } catch (err: any) {
+      alert(`Failed to create node: ${err.message}`);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6 pb-20">
       
-      {/* Header */}
+      {/* Header with Actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
@@ -65,17 +81,27 @@ export default function TreeManagementPage() {
           </h1>
           <p className="text-sm text-slate-500">Manage your domains, subjects, and topics.</p>
         </div>
-        <button 
-            onClick={loadTreeData}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white border border-slate-200 hover:bg-slate-50 rounded-md shadow-sm transition-colors active:scale-95 disabled:opacity-50"
-        >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Data
-        </button>
+        
+        <div className="flex gap-2 w-full md:w-auto">
+          <button 
+              onClick={loadTreeData}
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium bg-white border border-slate-200 hover:bg-slate-50 rounded-md shadow-sm transition-colors active:scale-95 disabled:opacity-50"
+          >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          
+          <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-all active:scale-95"
+          >
+              <Plus className="w-4 h-4" />
+              Add Domain
+          </button>
+        </div>
       </div>
 
-      {/* User-Friendly Error Banner */}
+      {/* Error UI */}
       {error && (
         <div className="bg-red-50 text-red-700 p-4 rounded-lg flex items-start gap-3 border border-red-200">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -93,20 +119,23 @@ export default function TreeManagementPage() {
           <p className="text-sm">Connecting to Backend...</p>
         </div>
       ) : (
-        /* Only render if NOT loading */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* List Visualization */}
+          {/* Visual List */}
           <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden min-h-[300px]">
             <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
               <h2 className="font-semibold text-slate-700 text-sm">Visual Tree</h2>
             </div>
-            
             <div className="p-4">
               {nodes.length === 0 ? (
                 <div className="text-center py-10">
                   <p className="text-slate-400 mb-2">Database is empty.</p>
-                  {!error && <span className="text-xs text-slate-300">Great! We are connected. Ready to add nodes.</span>}
+                  <button 
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="text-blue-600 hover:underline text-sm font-medium"
+                  >
+                    Create your first Domain
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -138,7 +167,7 @@ export default function TreeManagementPage() {
             </div>
           </div>
 
-          {/* Raw JSON Preview */}
+          {/* JSON Preview */}
           <div className="border border-slate-200 rounded-xl bg-slate-900 text-slate-300 overflow-hidden flex flex-col max-h-[500px]">
             <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex justify-between items-center">
               <h2 className="font-mono text-xs font-bold text-slate-400 uppercase tracking-wider">Backend Response</h2>
@@ -148,13 +177,18 @@ export default function TreeManagementPage() {
               <pre>{JSON.stringify(nodes, null, 2)}</pre>
             </div>
           </div>
-
         </div>
       )}
 
-      {/* Modular Debug Console - Will only show if there is an error */}
+      {/* Components */}
+      <CreateNodeModal 
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateNode}
+        isLoading={isCreating}
+      />
+      
       <DebugConsole error={debugData} />
-
     </div>
   );
 }
