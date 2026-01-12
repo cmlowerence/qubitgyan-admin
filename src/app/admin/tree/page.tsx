@@ -3,36 +3,36 @@
 import React, { useState } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
 import { TreeNode } from '@/components/tree/TreeNode';
-import { KnowledgeNode } from '@/types/tree';
+import { CreateNodeModal } from '@/components/tree/CreateNodeModal'; // Import Modal
+import { KnowledgeNode, NodeType, CreateNodePayload } from '@/types/tree';
 
-// MOCK DATA: We will replace this with API calls later
+// Helper to determine next type
+const getChildType = (parentType: NodeType): NodeType => {
+  if (parentType === 'DOMAIN') return 'SUBJECT';
+  if (parentType === 'SUBJECT') return 'SECTION';
+  return 'TOPIC';
+};
+
 const INITIAL_DATA: KnowledgeNode[] = [
   {
     id: 1, name: 'Physics', node_type: 'DOMAIN', parent: null,
     children: [
       {
         id: 2, name: 'Mechanics', node_type: 'SUBJECT', parent: 1,
-        children: [
-          { id: 3, name: 'Kinematics', node_type: 'SECTION', parent: 2, children: [] },
-          { id: 4, name: 'Dynamics', node_type: 'SECTION', parent: 2, children: [] }
-        ]
-      },
-      { id: 5, name: 'Thermodynamics', node_type: 'SUBJECT', parent: 1, children: [] }
-    ]
-  },
-  {
-    id: 10, name: 'Mathematics', node_type: 'DOMAIN', parent: null,
-    children: [
-      { id: 11, name: 'Calculus', node_type: 'SUBJECT', parent: 10, children: [] }
+        children: []
+      }
     ]
   }
 ];
 
 export default function TreeEditorPage() {
   const [data, setData] = useState<KnowledgeNode[]>(INITIAL_DATA);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set([1])); // Default expand Physics
+  const [expanded, setExpanded] = useState<Set<number>>(new Set([1]));
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeParent, setActiveParent] = useState<{id: number, name: string, type: NodeType} | null>(null);
 
-  // Toggle Collapse/Expand
   const toggleNode = (id: number) => {
     const next = new Set(expanded);
     if (next.has(id)) next.delete(id);
@@ -40,9 +40,79 @@ export default function TreeEditorPage() {
     setExpanded(next);
   };
 
-  // Dummy Add Function
+  // 1. Open Modal for Root Level (Domain)
+  const handleAddDomain = () => {
+    setActiveParent(null); // No parent = Root
+    setIsModalOpen(true);
+  };
+
+  // 2. Open Modal for Child
   const handleAddChild = (parentId: number) => {
-    alert(`Add child to parent ID: ${parentId}`);
+    // Find the parent node in our data (simple search for mock data)
+    // In real app, you might have a map or search recursively
+    const findNode = (nodes: KnowledgeNode[]): KnowledgeNode | null => {
+      for (const node of nodes) {
+        if (node.id === parentId) return node;
+        if (node.children) {
+          const found = findNode(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const parent = findNode(data);
+    if (parent) {
+      setActiveParent({ 
+        id: parent.id, 
+        name: parent.name, 
+        type: parent.node_type 
+      });
+      setIsModalOpen(true);
+    }
+  };
+
+  // 3. Handle Form Submit (Mock Logic)
+  const handleCreateNode = async (payload: CreateNodePayload) => {
+    // Simulate API Delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const newNode: KnowledgeNode = {
+      id: Date.now(), // Fake ID
+      name: payload.name,
+      node_type: payload.node_type,
+      parent: payload.parent || null,
+      children: []
+    };
+
+    // Update State (Complex recursive update for nested nodes)
+    if (!payload.parent) {
+      // Adding a new Root Domain
+      setData([...data, newNode]);
+    } else {
+      // Adding a child deep in the tree
+      const addNodeRecursive = (nodes: KnowledgeNode[]): KnowledgeNode[] => {
+        return nodes.map(node => {
+          if (node.id === payload.parent) {
+            return {
+              ...node,
+              children: [...(node.children || []), newNode]
+            };
+          }
+          if (node.children) {
+            return {
+              ...node,
+              children: addNodeRecursive(node.children)
+            };
+          }
+          return node;
+        });
+      };
+      setData(addNodeRecursive(data));
+      
+      // Auto-expand the parent so we see the new child
+      setExpanded(prev => new Set(prev).add(payload.parent!));
+    }
   };
 
   return (
@@ -53,7 +123,10 @@ export default function TreeEditorPage() {
           <h1 className="text-2xl font-bold tracking-tight">Knowledge Tree</h1>
           <p className="text-muted-foreground">Manage the hierarchy of domains, subjects, and topics.</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm">
+        <button 
+          onClick={handleAddDomain}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+        >
           <Plus size={16} />
           <span>New Domain</span>
         </button>
@@ -74,14 +147,14 @@ export default function TreeEditorPage() {
         </button>
       </div>
 
-      {/* The Tree Visualizer */}
+      {/* Tree Visualizer */}
       <div className="border border-border rounded-xl bg-card shadow-sm overflow-hidden">
         <div className="p-4 border-b border-border bg-muted/30 flex justify-between items-center">
           <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Hierarchy</span>
           <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider hidden sm:block">Type</span>
         </div>
         
-        <div className="p-2">
+        <div className="p-2 min-h-[300px]">
           {data.map((node) => (
             <TreeNode
               key={node.id}
@@ -92,8 +165,23 @@ export default function TreeEditorPage() {
               onAddChild={handleAddChild}
             />
           ))}
+          {data.length === 0 && (
+            <div className="text-center py-10 text-muted-foreground">
+              No nodes found. Start by creating a Domain.
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Modal Injection */}
+      <CreateNodeModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateNode}
+        parentId={activeParent?.id || null}
+        parentName={activeParent?.name}
+        suggestedType={activeParent ? getChildType(activeParent.type) : 'DOMAIN'}
+      />
     </div>
   );
 }
