@@ -5,7 +5,7 @@ import { Plus, Loader2, FilePlus, Tag } from 'lucide-react';
 import { Resource, ResourceType } from '@/types/resource';
 import { getResourcesByNode, createResource, deleteResource } from '@/services/resource';
 import { ResourceCard } from './ResourceCard';
-import { api } from '@/lib/api'; // To fetch contexts
+import { api } from '@/lib/api'; 
 
 export function ResourceManager({ nodeId }: { nodeId: number }) {
   const [resources, setResources] = useState<Resource[]>([]);
@@ -28,7 +28,6 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
     try {
       setLoading(true);
       const data = await getResourcesByNode(nodeId);
-      // Ensure data is an array to prevent .map() crashes
       setResources(Array.isArray(data) ? data : []);
     } catch (err) {
       setResources([]);
@@ -40,33 +39,63 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
   const fetchContexts = async () => {
     try {
       const response = await api.get('/contexts/');
-      // SAFETY: Ensure we only set an array
-      const data = Array.isArray(response.data) ? response.data : [];
+      console.log("📥 Raw Context Data:", response.data); // DEBUG: Check console to see what backend sent
+
+      let data: any[] = [];
+      
+      // 1. Handle Simple Array (Pagination Disabled)
+      if (Array.isArray(response.data)) {
+        data = response.data;
+      } 
+      // 2. Handle Django Pagination (Pagination Enabled: { count: x, results: [...] })
+      else if (response.data && Array.isArray(response.data.results)) {
+        console.log("⚠️ Detected Paginated Response. Extracting results...");
+        data = response.data.results;
+      }
+
       setContexts(data);
-      if (data.length > 0) setSelectedContext(data[0].id.toString());
+      
+      // Auto-select the first context so the button is enabled immediately
+      if (data.length > 0) {
+        setSelectedContext(data[0].id.toString());
+      } else {
+        console.warn("❌ No contexts found in the data array.");
+      }
     } catch (err) {
-      console.error("Failed to load contexts");
+      console.error("Failed to load contexts:", err);
       setContexts([]);
     }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("🚀 'Add' Button Clicked. Starting upload..."); // DEBUG: Proof the button works
+
+    if (!selectedContext) {
+      alert("Please select a context (JEE/NEET) first.");
+      return;
+    }
+
     setAdding(true);
     try {
-      await createResource({
+      const payload = {
         title,
         resource_type: type,
         node: nodeId,
-        // Send the selected context ID in an array
-        context_ids: selectedContext ? [parseInt(selectedContext)] : [],
+        context_ids: [parseInt(selectedContext)],
         google_drive_link: type === 'PDF' ? url : undefined,
         external_url: (type === 'VIDEO' || type === 'LINK') ? url : undefined,
-      });
+      };
+
+      console.log("📦 Sending Payload:", payload); // DEBUG: See exactly what we are sending
+      await createResource(payload);
+      
       setTitle('');
       setUrl('');
       fetchResources();
+      alert("Resource added successfully!");
     } catch (err: any) {
+      console.error("Upload Error:", err);
       const msg = err.response?.data ? JSON.stringify(err.response.data) : err.message;
       alert(`Upload Failed: ${msg}`);
     } finally {
@@ -108,7 +137,6 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
               required
             >
               <option value="">Select Context</option>
-              {/* SAFETY: Array Check for Contexts */}
               {Array.isArray(contexts) && contexts.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -125,14 +153,19 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
         />
 
         <button 
+          // If contexts are missing or not selected, this button stays DISABLED
           disabled={adding || !selectedContext}
-          className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
+          className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Add to Topic</>}
         </button>
+        
+        {/* Helper Message to explain why button is disabled */}
         {(!selectedContext || contexts.length === 0) && (
-          <p className="text-[10px] text-red-500 font-bold text-center italic">
-            {contexts.length === 0 ? "No Contexts found. Create one in Admin." : "Please select a context to continue"}
+          <p className="text-[10px] text-red-500 font-bold text-center italic animate-pulse">
+            {contexts.length === 0 
+              ? "Loading contexts... (If stuck, check console logs)" 
+              : "Please select a context from the list to enable the button."}
           </p>
         )}
       </form>
