@@ -18,13 +18,14 @@ import { KnowledgeNode, CreateNodePayload, UpdateNodePayload } from '@/types/tre
 // Components
 import LoadingScreen from '@/components/ui/loading-screen';
 import CreateNodeModal from '@/components/tree/CreateNodeModal';
-import EditNodeModal from '@/components/tree/EditNodeModal'; // NEW
+import EditNodeModal from '@/components/tree/EditNodeModal';
 import DebugConsole from '@/components/debug/DebugConsole';
 
 export default function NodeDetailsPage() {
   const params = useParams();
   const router = useRouter();
   
+  // Ensure nodeId is a number
   const nodeId = parseInt(params.nodeId as string);
 
   // Data State
@@ -36,9 +37,9 @@ export default function NodeDetailsPage() {
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // NEW
-  const [editingNode, setEditingNode] = useState<KnowledgeNode | null>(null); // NEW
-  const [isProcessing, setIsProcessing] = useState(false); // Shared loading state for create/edit
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingNode, setEditingNode] = useState<KnowledgeNode | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     loadNodeData();
@@ -48,9 +49,12 @@ export default function NodeDetailsPage() {
     try {
       setIsLoading(true);
       setError(null);
+      setDebugData(null);
       
       const data = await getKnowledgeNode(nodeId);
+      
       setCurrentNode(data);
+      // Ensure children is always an array
       setChildren(data.children || []);
 
     } catch (err: any) {
@@ -83,6 +87,11 @@ export default function NodeDetailsPage() {
   };
 
   const handleUpdateNode = async (id: number, payload: UpdateNodePayload) => {
+    if (!id) {
+      alert("Error: Cannot update node with missing ID.");
+      return;
+    }
+
     try {
       setIsProcessing(true);
       await updateKnowledgeNode(id, payload);
@@ -90,54 +99,61 @@ export default function NodeDetailsPage() {
       setIsEditModalOpen(false);
       setEditingNode(null);
     } catch (err: any) {
-      alert(`Failed to update: ${err.message}`);
+      console.error("Update Error:", err);
+      alert(`Failed to update: ${err.message || "Not found (Check ID)"}`);
     } finally {
       setIsProcessing(false);
     }
   };
 
-    const handleDeleteNode = async (id: number) => {
+  const handleDeleteNode = async (id: number) => {
+    if (!id) {
+        alert("Error: Cannot delete node with missing ID.");
+        return;
+    }
+
     try {
       setIsProcessing(true);
       
       // 1. Perform the Delete
       await deleteKnowledgeNode(id);
 
-      // 2. CHECK: Did we just delete the folder we are currently looking at?
+      // 2. SMART REDIRECT LOGIC
+      // Did we just delete the folder we are currently standing in?
       if (currentNode && id === currentNode.id) {
-        // YES: We deleted the "Main Node". 
-        // We cannot "refresh" because it's gone. We must leave.
-        
-        // If it had a parent, go to parent. If not, go to Root.
+        // Yes -> Redirect to Parent or Root
         if (currentNode.parent) {
           router.push(`/admin/tree/${currentNode.parent}`);
         } else {
           router.push('/admin/tree');
         }
-        
-        return; // Stop here! Do not try to load data.
+        return; // Stop here, don't refresh
       }
 
-      // 3. NO: We deleted a child card. 
-      // It is safe to refresh the current page.
+      // 3. No -> We deleted a child. Just refresh the list.
       await loadNodeData();
       
-      // Close modal
       setIsEditModalOpen(false);
       setEditingNode(null);
 
     } catch (err: any) {
       console.error("Delete Error:", err);
-      alert(`Failed to delete: ${err.message || "Unknown error"}`);
+      alert(`Failed to delete: ${err.message}`);
     } finally {
       setIsProcessing(false);
     }
   };
 
-
-  // Helper to open edit modal for a specific child
+  // Helper to safely open edit modal
   const openEditModal = (e: React.MouseEvent, node: KnowledgeNode) => {
     e.stopPropagation(); // Prevent clicking the card (navigation)
+    
+    // SAFETY CHECK: Does this node have an ID?
+    if (!node.id) {
+        alert(`Critical Error: This node ("${node.name}") has no ID from the backend.\nCheck the Debug Console below.`);
+        return;
+    }
+
     setEditingNode(node);
     setIsEditModalOpen(true);
   };
@@ -232,11 +248,14 @@ export default function NodeDetailsPage() {
         ) : (
           children.map((child) => (
             <div 
-              key={child.id}
-              onClick={() => router.push(`/admin/tree/${child.id}`)}
+              key={child.id || Math.random()} // Fallback key if ID missing
+              onClick={() => {
+                if (child.id) router.push(`/admin/tree/${child.id}`);
+                else alert("Cannot open: This node has no ID.");
+              }}
               className="group relative cursor-pointer bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all duration-300 active:scale-[0.98]"
             >
-              {/* EDIT BUTTON (Visible on Hover or Mobile) */}
+              {/* EDIT BUTTON */}
               <button
                 onClick={(e) => openEditModal(e, child)}
                 className="absolute top-2 right-2 z-10 p-1.5 bg-white/90 backdrop-blur text-slate-600 hover:text-blue-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
@@ -245,7 +264,7 @@ export default function NodeDetailsPage() {
                 <Pencil className="w-4 h-4" />
               </button>
 
-              {/* Card Header / Thumbnail */}
+              {/* Card Header */}
               <div className="h-40 bg-slate-100 relative overflow-hidden">
                 {child.thumbnail_url ? (
                    // eslint-disable-next-line @next/next/no-img-element
@@ -256,14 +275,13 @@ export default function NodeDetailsPage() {
                   </div>
                 )}
                 
-                {/* Type Badge */}
                 <span className="absolute bottom-2 right-2 text-[10px] font-bold uppercase bg-white/90 backdrop-blur-md text-slate-800 px-2 py-0.5 rounded-md shadow-sm">
                   {child.node_type}
                 </span>
                 
-                {/* Order Badge */}
-                <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/40 backdrop-blur-sm text-white px-2 py-0.5 rounded-full">
-                  #{child.order}
+                {/* ID Badge (For Debugging - shows ID or '??') */}
+                <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm ${child.id ? 'bg-black/40 text-white' : 'bg-red-500 text-white'}`}>
+                  #{child.id || 'MISSING'}
                 </span>
               </div>
 
@@ -300,6 +318,22 @@ export default function NodeDetailsPage() {
         node={editingNode}
         isLoading={isProcessing}
       />
+
+      {/* Debug Console - Enhanced to show children details */}
+      <div className="mt-8 border border-slate-200 rounded-xl bg-slate-900 text-slate-300 overflow-hidden">
+        <div className="bg-slate-950 px-4 py-2 border-b border-slate-800 flex justify-between items-center">
+          <h2 className="font-mono text-xs font-bold text-slate-500 uppercase">Debug Data</h2>
+          <span className="text-[10px] text-slate-600">ID: {nodeId}</span>
+        </div>
+        <div className="p-4 overflow-auto font-mono text-xs max-h-60 custom-scrollbar">
+          <p className="text-blue-400 mb-2">// Check if "children" list has "id" fields:</p>
+          <pre>{JSON.stringify({ 
+             currentId: currentNode?.id,
+             childrenCount: children.length,
+             firstChild: children[0] 
+          }, null, 2)}</pre>
+        </div>
+      </div>
 
       <DebugConsole error={debugData} />
     </div>
