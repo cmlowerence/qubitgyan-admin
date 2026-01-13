@@ -2,32 +2,43 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FolderTree, AlertCircle, RefreshCw, Plus, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { FolderTree, AlertCircle, RefreshCw, Plus, ArrowLeft, Image as ImageIcon, Settings2, Pencil } from 'lucide-react';
 
-import { getKnowledgeNode, createKnowledgeNode } from '@/services/tree';
-import { KnowledgeNode, CreateNodePayload } from '@/types/tree';
+// Services
+import { 
+  getKnowledgeNode, 
+  createKnowledgeNode, 
+  updateKnowledgeNode, 
+  deleteKnowledgeNode 
+} from '@/services/tree';
 
+// Types
+import { KnowledgeNode, CreateNodePayload, UpdateNodePayload } from '@/types/tree';
+
+// Components
 import LoadingScreen from '@/components/ui/loading-screen';
 import CreateNodeModal from '@/components/tree/CreateNodeModal';
+import EditNodeModal from '@/components/tree/EditNodeModal'; // NEW
 import DebugConsole from '@/components/debug/DebugConsole';
 
 export default function NodeDetailsPage() {
   const params = useParams();
   const router = useRouter();
   
-  // The ID from the URL (e.g., "5" from /admin/tree/5)
   const nodeId = parseInt(params.nodeId as string);
 
-  // State
+  // Data State
   const [currentNode, setCurrentNode] = useState<KnowledgeNode | null>(null);
   const [children, setChildren] = useState<KnowledgeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [debugData, setDebugData] = useState<any>(null);
 
-  // Modal State
+  // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // NEW
+  const [editingNode, setEditingNode] = useState<KnowledgeNode | null>(null); // NEW
+  const [isProcessing, setIsProcessing] = useState(false); // Shared loading state for create/edit
 
   useEffect(() => {
     loadNodeData();
@@ -38,11 +49,8 @@ export default function NodeDetailsPage() {
       setIsLoading(true);
       setError(null);
       
-      // Fetch the specific node (Backend returns node + children)
       const data = await getKnowledgeNode(nodeId);
-      
       setCurrentNode(data);
-      // The serializer returns children in the 'children' field
       setChildren(data.children || []);
 
     } catch (err: any) {
@@ -59,17 +67,54 @@ export default function NodeDetailsPage() {
     }
   };
 
+  // --- ACTIONS ---
+
   const handleCreateNode = async (payload: CreateNodePayload) => {
     try {
-      setIsCreating(true);
+      setIsProcessing(true);
       await createKnowledgeNode(payload);
-      await loadNodeData(); // Refresh to see the new child
+      await loadNodeData(); 
       setIsCreateModalOpen(false);
     } catch (err: any) {
-      alert(`Failed to create node: ${err.message}`);
+      alert(`Failed to create: ${err.message}`);
     } finally {
-      setIsCreating(false);
+      setIsProcessing(false);
     }
+  };
+
+  const handleUpdateNode = async (id: number, payload: UpdateNodePayload) => {
+    try {
+      setIsProcessing(true);
+      await updateKnowledgeNode(id, payload);
+      await loadNodeData();
+      setIsEditModalOpen(false);
+      setEditingNode(null);
+    } catch (err: any) {
+      alert(`Failed to update: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDeleteNode = async (id: number) => {
+    try {
+      setIsProcessing(true);
+      await deleteKnowledgeNode(id);
+      await loadNodeData();
+      // If we deleted the current folder's parent/self, we might need to redirect, 
+      // but here we are usually deleting CHILDREN.
+    } catch (err: any) {
+      alert(`Failed to delete: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Helper to open edit modal for a specific child
+  const openEditModal = (e: React.MouseEvent, node: KnowledgeNode) => {
+    e.stopPropagation(); // Prevent clicking the card (navigation)
+    setEditingNode(node);
+    setIsEditModalOpen(true);
   };
 
   // --- RENDER ---
@@ -78,79 +123,85 @@ export default function NodeDetailsPage() {
 
   if (error) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center text-center space-y-4">
+      <div className="p-4 min-h-[50vh] flex flex-col items-center justify-center text-center space-y-4">
         <div className="bg-red-100 p-4 rounded-full">
           <AlertCircle className="w-8 h-8 text-red-600" />
         </div>
         <h2 className="text-xl font-bold text-gray-800">Folder Not Found</h2>
-        <p className="text-gray-500 max-w-md">{error}</p>
+        <p className="text-gray-500 max-w-xs mx-auto text-sm">{error}</p>
         <button 
           onClick={() => router.back()}
-          className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          className="px-6 py-2.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors"
         >
           Go Back
         </button>
-        <DebugConsole error={debugData} />
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 pb-20">
+    <div className="p-4 md:p-6 space-y-6 pb-24 md:pb-20 max-w-7xl mx-auto">
       
-      {/* Header: Breadcrumb & Actions */}
-      <div className="flex flex-col gap-4">
+      {/* Navigation & Header */}
+      <div className="space-y-4">
         <button 
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors w-fit"
+          className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors w-fit p-1 -ml-1"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Parent
         </button>
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
-              <FolderTree className="w-6 h-6 text-blue-600" />
-              {currentNode?.name}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+          <div className="w-full md:w-auto">
+            <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800 break-all">
+              <FolderTree className="w-6 h-6 text-blue-600 flex-shrink-0" />
+              <span>{currentNode?.name}</span>
             </h1>
-            <p className="text-sm text-slate-500">
-              Type: <span className="font-semibold uppercase text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">{currentNode?.node_type}</span>
-            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-xs font-bold uppercase bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
+                {currentNode?.node_type}
+              </span>
+              <span className="text-xs text-slate-500">
+                {children.length} {children.length === 1 ? 'item' : 'items'} inside
+              </span>
+            </div>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-3 w-full md:w-auto mt-2 md:mt-0">
+            {/* Edit Current Parent Node Button */}
             <button 
-                onClick={loadNodeData}
-                className="px-4 py-2 text-sm font-medium bg-white border border-slate-200 hover:bg-slate-50 rounded-md shadow-sm"
+              onClick={(e) => {
+                if (currentNode) openEditModal(e, currentNode);
+              }}
+              className="p-2.5 bg-slate-50 text-slate-600 border border-slate-200 hover:bg-white rounded-lg shadow-sm active:scale-95 transition-all"
+              title="Edit Folder Settings"
             >
-                <RefreshCw className="w-4 h-4" />
+              <Settings2 className="w-5 h-5" />
             </button>
-            
+
             <button 
                 onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm active:scale-95 transition-all"
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md shadow-blue-200 active:scale-95 transition-all"
             >
-                <Plus className="w-4 h-4" />
-                Add {currentNode?.node_type === 'DOMAIN' ? 'Subject' : 'Topic'}
+                <Plus className="w-5 h-5" />
+                <span>Add Item</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Children Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {children.length === 0 ? (
-          <div className="col-span-full border-2 border-dashed border-slate-200 rounded-xl p-12 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-              <FolderTree className="w-6 h-6 text-slate-300" />
-            </div>
-            <p className="text-slate-500 font-medium">This folder is empty.</p>
-            <p className="text-sm text-slate-400 mb-6">Start by adding sub-topics or subjects.</p>
+          <div className="col-span-full border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-xl p-8 md:p-12 flex flex-col items-center justify-center text-center">
+            <FolderTree className="w-8 h-8 text-slate-300 mb-4" />
+            <h3 className="text-slate-900 font-semibold text-lg mb-1">Empty Folder</h3>
+            <p className="text-slate-500 text-sm mb-6 max-w-sm">No items found inside {currentNode?.name}.</p>
             <button 
               onClick={() => setIsCreateModalOpen(true)}
-              className="text-blue-600 hover:underline text-sm font-medium"
+              className="px-6 py-2 bg-white border border-slate-200 text-blue-600 font-medium rounded-lg hover:border-blue-300 transition-all"
             >
-              Create New Item
+              Create First Item
             </button>
           </div>
         ) : (
@@ -158,31 +209,48 @@ export default function NodeDetailsPage() {
             <div 
               key={child.id}
               onClick={() => router.push(`/admin/tree/${child.id}`)}
-              className="group cursor-pointer bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md rounded-xl overflow-hidden transition-all duration-200"
+              className="group relative cursor-pointer bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all duration-300 active:scale-[0.98]"
             >
+              {/* EDIT BUTTON (Visible on Hover or Mobile) */}
+              <button
+                onClick={(e) => openEditModal(e, child)}
+                className="absolute top-2 right-2 z-10 p-1.5 bg-white/90 backdrop-blur text-slate-600 hover:text-blue-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                title="Edit Item"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+
               {/* Card Header / Thumbnail */}
-              <div className="h-32 bg-slate-50 border-b border-slate-100 relative overflow-hidden">
+              <div className="h-40 bg-slate-100 relative overflow-hidden">
                 {child.thumbnail_url ? (
                    // eslint-disable-next-line @next/next/no-img-element
-                  <img src={child.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img src={child.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-200">
-                    <ImageIcon className="w-10 h-10" />
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 bg-slate-50">
+                    <ImageIcon className="w-10 h-10 mb-2 opacity-50" />
                   </div>
                 )}
                 
-                <span className="absolute top-2 right-2 text-[10px] font-bold uppercase bg-white/90 backdrop-blur text-slate-700 px-2 py-1 rounded shadow-sm">
+                {/* Type Badge */}
+                <span className="absolute bottom-2 right-2 text-[10px] font-bold uppercase bg-white/90 backdrop-blur-md text-slate-800 px-2 py-0.5 rounded-md shadow-sm">
                   {child.node_type}
+                </span>
+                
+                {/* Order Badge */}
+                <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/40 backdrop-blur-sm text-white px-2 py-0.5 rounded-full">
+                  #{child.order}
                 </span>
               </div>
 
               {/* Card Body */}
               <div className="p-4">
-                <h3 className="font-semibold text-slate-800 mb-1 truncate group-hover:text-blue-600 transition-colors">{child.name}</h3>
-                <div className="flex items-center gap-3 text-xs text-slate-500">
-                  <span>Order: {child.order}</span>
-                  <span>•</span>
+                <h3 className="font-semibold text-slate-800 mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                  {child.name}
+                </h3>
+                <div className="flex items-center gap-3 text-xs text-slate-500 mt-2">
                   <span>{child.children?.length || 0} items</span>
+                  <span className="text-slate-300">•</span>
+                  <span>{child.resource_count || 0} res</span>
                 </div>
               </div>
             </div>
@@ -190,24 +258,25 @@ export default function NodeDetailsPage() {
         )}
       </div>
 
-      {/* JSON Debugger */}
-      <div className="mt-8 border border-slate-200 rounded-xl bg-slate-900 text-slate-300 overflow-hidden">
-        <div className="bg-slate-950 px-4 py-2 border-b border-slate-800">
-          <h2 className="font-mono text-xs font-bold text-slate-500 uppercase">Current Node Data</h2>
-        </div>
-        <div className="p-4 overflow-auto font-mono text-xs max-h-40">
-          <pre>{JSON.stringify(currentNode, null, 2)}</pre>
-        </div>
-      </div>
-
+      {/* Modals */}
       <CreateNodeModal 
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateNode}
-        isLoading={isCreating}
-        parentId={nodeId} // Pass the ID so the backend knows where to put it!
+        isLoading={isProcessing}
+        parentId={nodeId}
       />
 
+      <EditNodeModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleUpdateNode}
+        onDelete={handleDeleteNode}
+        node={editingNode}
+        isLoading={isProcessing}
+      />
+
+      <DebugConsole error={debugData} />
     </div>
   );
 }
