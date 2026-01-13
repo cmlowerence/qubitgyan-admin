@@ -1,17 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, FilePlus, AlertCircle } from 'lucide-react';
+import { Plus, Loader2, FilePlus, AlertCircle, ListOrdered, Save, X } from 'lucide-react';
 import { Resource, ResourceType } from '@/types/resource';
-import { getResourcesByNode, createResource, deleteResource } from '@/services/resource';
+import { getResourcesByNode, createResource, deleteResource, reorderResources } from '@/services/resource';
 import { ResourceCard } from './ResourceCard';
 
 export function ResourceManager({ nodeId }: { nodeId: number }) {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isSorting, setIsSorting] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
   
+  // Form State
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ResourceType>('PDF');
   const [url, setUrl] = useState('');
@@ -23,25 +24,39 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
   const fetchResources = async () => {
     try {
       setLoading(true);
-      setError(null);
       const data = await getResourcesByNode(nodeId);
-      // Ensure data is an array to prevent .map() crashes
-      setResources(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      setError("Failed to load resources");
-      setResources([]);
+      // Sort by the 'order' field from backend
+      const sortedData = (Array.isArray(data) ? data : []).sort((a, b) => a.order - b.order);
+      setResources(sortedData);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSaveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      const ids = resources.map(r => r.id);
+      await reorderResources(ids);
+      setIsSorting(false);
+      fetchResources();
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
+  const moveResource = (index: number, direction: 'up' | 'down') => {
+    const newResources = [...resources];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= resources.length) return;
+    
+    [newResources[index], newResources[targetIndex]] = [newResources[targetIndex], newResources[index]];
+    setResources(newResources);
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAdding(true);
     try {
-      // Backend Logic:
-      // If PDF, send as google_drive_link
-      // If VIDEO/LINK, send as external_url
       await createResource({
         title,
         resource_type: type,
@@ -49,84 +64,61 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
         google_drive_link: type === 'PDF' ? url : undefined,
         external_url: (type === 'VIDEO' || type === 'LINK') ? url : undefined,
       });
-      setTitle('');
-      setUrl('');
-      fetchResources();
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (confirm('Delete this resource?')) {
-      try {
-        await deleteResource(id);
-        fetchResources();
-      } catch (err: any) {
-        alert("Delete failed");
-      }
-    }
+      setTitle(''); setUrl(''); fetchResources();
+    } catch (err: any) { alert(err.message); }
   };
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-6 space-y-4">
-        <h3 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2">
-          <FilePlus className="w-4 h-4" /> Attach New Resource
+      {/* Header with Sort Toggle */}
+      <div className="flex justify-between items-center px-1">
+        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+          {resources.length} Materials
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input 
-            placeholder="Resource Title (e.g. Chapter 1 Notes)"
-            className="p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            required
-          />
-          <select 
-            className="p-2.5 border rounded-lg text-sm bg-white"
-            value={type}
-            onChange={e => setType(e.target.value as ResourceType)}
-          >
-            <option value="PDF">Google Drive PDF</option>
-            <option value="VIDEO">YouTube / Video Link</option>
-            <option value="LINK">External Link</option>
-          </select>
-          <input 
-            placeholder={type === 'PDF' ? "Paste Drive Link" : "Paste URL"}
-            className="p-2.5 border rounded-lg text-sm outline-none"
-            value={url}
-            onChange={e => setUrl(e.target.value)}
-            required
-          />
-        </div>
         <button 
-          disabled={adding}
-          className="w-full py-2.5 bg-slate-900 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all disabled:opacity-50"
+          onClick={() => isSorting ? handleSaveOrder() : setIsSorting(true)}
+          disabled={savingOrder || resources.length < 2}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            isSorting 
+            ? 'bg-green-600 text-white shadow-lg shadow-green-100' 
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
         >
-          {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Add Resource</>}
+          {savingOrder ? <Loader2 className="w-3 h-3 animate-spin" /> : isSorting ? <Save className="w-3 h-3" /> : <ListOrdered className="w-3 h-3" />}
+          {isSorting ? 'Save Order' : 'Reorder'}
         </button>
-      </form>
+      </div>
 
-      {error && (
-        <div className="flex items-center gap-2 text-red-500 text-sm p-4 bg-red-50 rounded-lg">
-          <AlertCircle className="w-4 h-4" /> {error}
-        </div>
+      {!isSorting && (
+        <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-4 animate-in fade-in zoom-in duration-300">
+           {/* ... (Existing Form Inputs) ... */}
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input placeholder="Title" className="p-2 border rounded-lg text-sm" value={title} onChange={e => setTitle(e.target.value)} required />
+              <select className="p-2 border rounded-lg text-sm bg-white" value={type} onChange={e => setType(e.target.value as ResourceType)}>
+                <option value="PDF">Drive PDF</option>
+                <option value="VIDEO">Video</option>
+                <option value="LINK">Link</option>
+              </select>
+              <input placeholder="URL" className="p-2 border rounded-lg text-sm" value={url} onChange={e => setUrl(e.target.value)} required />
+           </div>
+           <button type="submit" className="w-full py-2 bg-slate-900 text-white rounded-lg text-sm font-bold">Add Resource</button>
+        </form>
       )}
 
       <div className="space-y-3">
-        {loading ? (
-          <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-slate-200" /></div>
-        ) : resources.length === 0 ? (
-          <div className="text-center p-12 border-2 border-dashed rounded-2xl text-slate-400 text-sm">
-            No materials found for this topic.
+        {resources.map((res, index) => (
+          <div key={res.id} className="flex items-center gap-2">
+            {isSorting && (
+              <div className="flex flex-col gap-1">
+                <button onClick={() => moveResource(index, 'up')} className="p-1 hover:bg-slate-100 rounded">▲</button>
+                <button onClick={() => moveResource(index, 'down')} className="p-1 hover:bg-slate-100 rounded">▼</button>
+              </div>
+            )}
+            <div className="flex-1">
+              <ResourceCard resource={res} onDelete={(id) => deleteResource(id).then(fetchResources)} />
+            </div>
           </div>
-        ) : (
-          resources.map(res => (
-            <ResourceCard key={res.id} resource={res} onDelete={handleDelete} />
-          ))
-        )}
+        ))}
       </div>
     </div>
   );
