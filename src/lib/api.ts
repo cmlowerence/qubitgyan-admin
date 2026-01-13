@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qubitgyan-backend.onrender.com/api/v1';
+// 1. Sanitize the Base URL (Remove trailing slash if present)
+const RAW_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qubitgyan-api.onrender.com/api/v1';
+const API_URL = RAW_URL.replace(/\/+$/, ''); // Removes '/' at the end
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -9,9 +11,11 @@ export const api = axios.create({
   },
 });
 
-// --- NEW: Request Interceptor ---
-// Before sending ANY request, check if we have a token
+// 2. Request Interceptor: Attach Token & Log URL
 api.interceptors.request.use((config) => {
+  // Debug: Log the full URL to the console so we can catch 404s
+  console.log(`🚀 Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+  
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('access_token');
     if (token) {
@@ -21,17 +25,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// --- NEW: Response Interceptor ---
-// If the backend says "401 Unauthorized" (Token expired/invalid), kick user to login
+// 3. Response Interceptor: Handle 401s
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      if (typeof window !== 'undefined') {
-        // Only redirect if we are not already on the login page
-        if (!window.location.pathname.startsWith('/login')) {
-          window.location.href = '/login';
-        }
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);
@@ -39,9 +39,11 @@ api.interceptors.response.use(
 );
 
 export const handleApiError = (error: any) => {
-  console.error('API Error:', error);
+  console.error('API Error Object:', error);
   if (error.response) {
-    throw new Error(error.response.data.detail || JSON.stringify(error.response.data) || 'Server error');
+    // Return detailed server message
+    const msg = error.response.data.detail || JSON.stringify(error.response.data);
+    throw new Error(msg || `Server Error (${error.response.status})`);
   } else {
     throw new Error(error.message || 'Network Error');
   }

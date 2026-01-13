@@ -303,12 +303,14 @@ export default function NodeDetailsPage() {
 
       {/* Modals */}
       <CreateNodeModal 
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateNode}
-        isLoading={isProcessing}
-        parentId={nodeId}
-      />
+  isOpen={isCreateModalOpen}
+  onClose={() => setIsCreateModalOpen(false)}
+  onSubmit={handleCreateNode}
+  isLoading={isProcessing}
+  parentId={nodeId}
+  parentType={currentNode?.node_type} // <--- ADD THIS LINE
+/>
+
 
       <EditNodeModal
         isOpen={isEditModalOpen}
