@@ -49,3 +49,12 @@ export const deleteKnowledgeNode = async (id: number): Promise<void> => {
     throw handleApiError(error);
   }
 };
+
+export const getKnowledgeNode = async (id: number): Promise < KnowledgeNode > => {
+  try {
+    const response = await api.get(`/nodes/${id}/`);
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};
