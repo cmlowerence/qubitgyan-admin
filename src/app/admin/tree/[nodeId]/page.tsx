@@ -96,19 +96,44 @@ export default function NodeDetailsPage() {
     }
   };
 
-  const handleDeleteNode = async (id: number) => {
+    const handleDeleteNode = async (id: number) => {
     try {
       setIsProcessing(true);
+      
+      // 1. Perform the Delete
       await deleteKnowledgeNode(id);
+
+      // 2. CHECK: Did we just delete the folder we are currently looking at?
+      if (currentNode && id === currentNode.id) {
+        // YES: We deleted the "Main Node". 
+        // We cannot "refresh" because it's gone. We must leave.
+        
+        // If it had a parent, go to parent. If not, go to Root.
+        if (currentNode.parent) {
+          router.push(`/admin/tree/${currentNode.parent}`);
+        } else {
+          router.push('/admin/tree');
+        }
+        
+        return; // Stop here! Do not try to load data.
+      }
+
+      // 3. NO: We deleted a child card. 
+      // It is safe to refresh the current page.
       await loadNodeData();
-      // If we deleted the current folder's parent/self, we might need to redirect, 
-      // but here we are usually deleting CHILDREN.
+      
+      // Close modal
+      setIsEditModalOpen(false);
+      setEditingNode(null);
+
     } catch (err: any) {
-      alert(`Failed to delete: ${err.message}`);
+      console.error("Delete Error:", err);
+      alert(`Failed to delete: ${err.message || "Unknown error"}`);
     } finally {
       setIsProcessing(false);
     }
   };
+
 
   // Helper to open edit modal for a specific child
   const openEditModal = (e: React.MouseEvent, node: KnowledgeNode) => {
