@@ -61,7 +61,8 @@ export default function NodeDetailsPage() {
       setError(null);
       const data = await getKnowledgeNode(nodeId);
       setCurrentNode(data);
-      setChildren(data.children || []);
+      // Fallback to empty array if children is undefined
+      setChildren(Array.isArray(data.children) ? data.children : []);
     } catch (err: any) {
       console.error("Fetch Error:", err);
       setError(err.message || 'Failed to load node details');
@@ -218,19 +219,8 @@ export default function NodeDetailsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {children.length === 0 ? (
-              <div className="col-span-full border-2 border-dashed border-slate-200 rounded-3xl p-12 flex flex-col items-center justify-center text-center bg-slate-50/50">
-                <FolderTree className="w-12 h-12 text-slate-200 mb-4" />
-                <h3 className="text-slate-600 font-bold">This folder is empty</h3>
-                <p className="text-slate-400 text-sm mt-1 mb-6">Start building your knowledge tree by adding items.</p>
-                <button 
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="px-6 py-2 bg-white border border-slate-200 text-blue-600 text-sm font-bold rounded-lg hover:shadow-sm transition-all"
-                >
-                  Add First Item
-                </button>
-              </div>
-            ) : (
+            {/* SAFE ARRAY CHECK HERE - PREVENTS CRASH */}
+            {Array.isArray(children) && children.length > 0 ? (
               children.map((child) => (
                 <div 
                   key={child.id}
@@ -269,6 +259,19 @@ export default function NodeDetailsPage() {
                   </div>
                 </div>
               ))
+            ) : (
+              // Empty State
+              <div className="col-span-full border-2 border-dashed border-slate-200 rounded-3xl p-12 flex flex-col items-center justify-center text-center bg-slate-50/50">
+                <FolderTree className="w-12 h-12 text-slate-200 mb-4" />
+                <h3 className="text-slate-600 font-bold">This folder is empty</h3>
+                <p className="text-slate-400 text-sm mt-1 mb-6">Start building your knowledge tree by adding items.</p>
+                <button 
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="px-6 py-2 bg-white border border-slate-200 text-blue-600 text-sm font-bold rounded-lg hover:shadow-sm transition-all"
+                >
+                  Add First Item
+                </button>
+              </div>
             )}
           </div>
         )}

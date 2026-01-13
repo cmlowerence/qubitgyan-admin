@@ -40,10 +40,13 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
   const fetchContexts = async () => {
     try {
       const response = await api.get('/contexts/');
-      setContexts(response.data);
-      if (response.data.length > 0) setSelectedContext(response.data[0].id.toString());
+      // SAFETY: Ensure we only set an array
+      const data = Array.isArray(response.data) ? response.data : [];
+      setContexts(data);
+      if (data.length > 0) setSelectedContext(data[0].id.toString());
     } catch (err) {
       console.error("Failed to load contexts");
+      setContexts([]);
     }
   };
 
@@ -105,7 +108,8 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
               required
             >
               <option value="">Select Context</option>
-              {contexts.map(c => (
+              {/* SAFETY: Array Check for Contexts */}
+              {Array.isArray(contexts) && contexts.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
@@ -126,22 +130,24 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
         >
           {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Add to Topic</>}
         </button>
-        {!selectedContext && contexts.length > 0 && (
-          <p className="text-[10px] text-red-500 font-bold text-center italic">Please select a context (JEE/NEET/etc) to continue</p>
+        {(!selectedContext || contexts.length === 0) && (
+          <p className="text-[10px] text-red-500 font-bold text-center italic">
+            {contexts.length === 0 ? "No Contexts found. Create one in Admin." : "Please select a context to continue"}
+          </p>
         )}
       </form>
 
       <div className="space-y-3">
         {loading ? (
           <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-slate-200" /></div>
-        ) : resources.length === 0 ? (
-          <div className="text-center p-12 border-2 border-dashed rounded-2xl text-slate-300 text-sm font-medium">
-            No materials uploaded yet.
-          </div>
-        ) : (
+        ) : (Array.isArray(resources) && resources.length > 0) ? (
           resources.map(res => (
             <ResourceCard key={res.id} resource={res} onDelete={(id) => deleteResource(id).then(fetchResources)} />
           ))
+        ) : (
+          <div className="text-center p-12 border-2 border-dashed rounded-2xl text-slate-300 text-sm font-medium">
+            No materials uploaded yet.
+          </div>
         )}
       </div>
     </div>
