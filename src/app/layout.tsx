@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google"; // 1. Import Font
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
+
+// 2. Initialize Font
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "QubitGyan Admin",
@@ -14,7 +18,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      {/* 3. Apply the font class to the body */}
+      <body className={inter.className}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
