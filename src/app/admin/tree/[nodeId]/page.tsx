@@ -28,14 +28,13 @@ import { KnowledgeNode, CreateNodePayload, UpdateNodePayload } from '@/types/tre
 import LoadingScreen from '@/components/ui/loading-screen';
 import CreateNodeModal from '@/components/tree/CreateNodeModal';
 import EditNodeModal from '@/components/tree/EditNodeModal';
-import { ResourceManager } from '@/components/resources/ResourceManager'; // Ensure this path is correct
+import { ResourceManager } from '@/components/resources/ResourceManager'; 
 import DebugConsole from '@/components/debug/DebugConsole';
 
 export default function NodeDetailsPage() {
   const params = useParams();
   const router = useRouter();
   
-  // Parse ID safely
   const nodeId = params?.nodeId ? parseInt(params.nodeId as string) : 0;
 
   // Data State
@@ -64,7 +63,7 @@ export default function NodeDetailsPage() {
       const data = await getKnowledgeNode(nodeId);
       setCurrentNode(data);
       
-      // CRITICAL FIX: Ensure children is always an array to prevent .map() crashes
+      // Ensure children is always an array
       setChildren(Array.isArray(data.children) ? data.children : []);
       
     } catch (err: any) {
@@ -115,7 +114,6 @@ export default function NodeDetailsPage() {
       setIsProcessing(true);
       await deleteKnowledgeNode(id);
 
-      // Smart Redirect: If current folder is deleted, go back
       if (currentNode && id === currentNode.id) {
         currentNode.parent 
           ? router.push(`/admin/tree/${currentNode.parent}`) 
@@ -219,14 +217,12 @@ export default function NodeDetailsPage() {
               <BookOpen className="w-5 h-5 text-amber-500" />
               <h2 className="font-black text-slate-800 uppercase tracking-tight">Learning Resources</h2>
             </div>
-            {/* The Resource Manager handles fetching its own data based on ID */}
             <ResourceManager nodeId={nodeId} />
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* Safe Conditional Mapping */}
             {Array.isArray(children) && children.length > 0 ? (
-              children.map((child) => (
+              children.map((child: any) => (
                 <div 
                   key={child.id}
                   onClick={() => router.push(`/admin/tree/${child.id}`)}
@@ -257,7 +253,8 @@ export default function NodeDetailsPage() {
                       {child.name}
                     </h3>
                     <div className="flex items-center gap-3 mt-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      <span>{child.children?.length || 0} Items</span>
+                      {/* FIXED: Uses items_count from backend instead of checking array length */}
+                      <span>{child.items_count || 0} Items</span>
                       <span className="w-1 h-1 bg-slate-200 rounded-full" />
                       <span>{child.resource_count || 0} Resources</span>
                     </div>
@@ -265,7 +262,6 @@ export default function NodeDetailsPage() {
                 </div>
               ))
             ) : (
-              // Empty State for Folders
               <div className="col-span-full border-2 border-dashed border-slate-200 rounded-3xl p-12 flex flex-col items-center justify-center text-center bg-slate-50/50">
                 <FolderTree className="w-12 h-12 text-slate-200 mb-4" />
                 <h3 className="text-slate-600 font-bold">This folder is empty</h3>
@@ -282,7 +278,6 @@ export default function NodeDetailsPage() {
         )}
       </div>
 
-      {/* 3. Modals & Debugging */}
       <CreateNodeModal 
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
