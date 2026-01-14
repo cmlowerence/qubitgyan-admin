@@ -77,6 +77,3 @@ export function AdminSidebar({ className }: { className?: string }) {
     </aside>
   );
 }
-if (true) {
-  
-}
