@@ -3,14 +3,24 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Network, Users, Settings, LogOut, Database } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  Network, 
+  Users, 
+  Settings, 
+  LogOut, 
+  Database,
+  Tag // Imported for Contexts
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/brand/Logo';
-import { logoutAdmin } from '@/services/auth'; // Import the logout function
+import { logoutAdmin } from '@/services/auth'; 
 
+// Added 'Contexts' to the menu items
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
   { icon: Network, label: 'Knowledge Tree', href: '/admin/tree' },
+  { icon: Tag, label: 'Contexts', href: '/admin/contexts' }, // NEW
   { icon: Database, label: 'Resources', href: '/admin/resources' },
   { icon: Users, label: 'Users', href: '/admin/users' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
@@ -54,7 +64,7 @@ export function AdminSidebar({ className }: { className?: string }) {
         })}
       </div>
 
-      {/* Footer - NOW FUNCTIONAL */}
+      {/* Footer */}
       <div className="p-4 border-t border-slate-200 shrink-0 mt-auto">
         <button 
           onClick={handleLogout}
@@ -66,4 +76,7 @@ export function AdminSidebar({ className }: { className?: string }) {
       </div>
     </aside>
   );
+}
+if (true) {
+  
 }
