@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { 
   FolderTree, 
   AlertCircle, 
-  RefreshCw, 
   Plus, 
   ArrowLeft, 
   Image as ImageIcon, 
@@ -29,14 +28,15 @@ import { KnowledgeNode, CreateNodePayload, UpdateNodePayload } from '@/types/tre
 import LoadingScreen from '@/components/ui/loading-screen';
 import CreateNodeModal from '@/components/tree/CreateNodeModal';
 import EditNodeModal from '@/components/tree/EditNodeModal';
-import { ResourceManager } from '@/components/resources/ResourceManager';
+import { ResourceManager } from '@/components/resources/ResourceManager'; // Ensure this path is correct
 import DebugConsole from '@/components/debug/DebugConsole';
 
 export default function NodeDetailsPage() {
   const params = useParams();
   const router = useRouter();
   
-  const nodeId = parseInt(params.nodeId as string);
+  // Parse ID safely
+  const nodeId = params?.nodeId ? parseInt(params.nodeId as string) : 0;
 
   // Data State
   const [currentNode, setCurrentNode] = useState<KnowledgeNode | null>(null);
@@ -52,7 +52,9 @@ export default function NodeDetailsPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    loadNodeData();
+    if (nodeId) {
+      loadNodeData();
+    }
   }, [nodeId]);
 
   const loadNodeData = async () => {
@@ -61,8 +63,10 @@ export default function NodeDetailsPage() {
       setError(null);
       const data = await getKnowledgeNode(nodeId);
       setCurrentNode(data);
-      // Fallback to empty array if children is undefined
+      
+      // CRITICAL FIX: Ensure children is always an array to prevent .map() crashes
       setChildren(Array.isArray(data.children) ? data.children : []);
+      
     } catch (err: any) {
       console.error("Fetch Error:", err);
       setError(err.message || 'Failed to load node details');
@@ -215,11 +219,12 @@ export default function NodeDetailsPage() {
               <BookOpen className="w-5 h-5 text-amber-500" />
               <h2 className="font-black text-slate-800 uppercase tracking-tight">Learning Resources</h2>
             </div>
+            {/* The Resource Manager handles fetching its own data based on ID */}
             <ResourceManager nodeId={nodeId} />
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* SAFE ARRAY CHECK HERE - PREVENTS CRASH */}
+            {/* Safe Conditional Mapping */}
             {Array.isArray(children) && children.length > 0 ? (
               children.map((child) => (
                 <div 
@@ -260,7 +265,7 @@ export default function NodeDetailsPage() {
                 </div>
               ))
             ) : (
-              // Empty State
+              // Empty State for Folders
               <div className="col-span-full border-2 border-dashed border-slate-200 rounded-3xl p-12 flex flex-col items-center justify-center text-center bg-slate-50/50">
                 <FolderTree className="w-12 h-12 text-slate-200 mb-4" />
                 <h3 className="text-slate-600 font-bold">This folder is empty</h3>
