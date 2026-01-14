@@ -1,28 +1,58 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, UserPlus, Loader2, Shield, GraduationCap, AlertCircle } from 'lucide-react';
-import { CreateUserPayload } from '@/services/users';
+import React, { useState, useEffect } from 'react';
+import { X, UserPlus, Loader2, Shield, GraduationCap, AlertCircle, Image as ImageIcon, Check } from 'lucide-react';
+import { CreateUserPayload, User } from '@/services/users';
 
 interface CreateUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: CreateUserPayload) => Promise<void>;
   isLoading: boolean;
+  currentUser: User | null;
 }
 
-export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading }: CreateUserModalProps) {
+// Prebuilt Avatar Options (DiceBear API)
+const PREBUILT_AVATARS = [
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Mark",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Luna"
+];
+
+export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentUser }: CreateUserModalProps) {
   const [formData, setFormData] = useState<CreateUserPayload>({
     username: '',
     email: '',
     password: '',
     first_name: '',
     last_name: '',
-    is_staff: false
+    is_staff: false,
+    profile: {
+      avatar_url: ''
+    }
   });
   
   const [confirmPass, setConfirmPass] = useState('');
   const [error, setError] = useState('');
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        username: '',
+        email: '',
+        password: '',
+        first_name: '',
+        last_name: '',
+        is_staff: false,
+        profile: { avatar_url: '' }
+      });
+      setConfirmPass('');
+      setError('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -38,11 +68,14 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading }: Create
     onSubmit(formData);
   };
 
+  const isSuperUser = currentUser?.is_superuser || false;
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
         
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900">
+        {/* Header */}
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900 shrink-0">
           <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-blue-600" />
             Add New User
@@ -52,9 +85,11 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading }: Create
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Scrollable Form Area */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           
-          <div className="grid grid-cols-2 gap-3 mb-2">
+          {/* Role Toggle */}
+          <div className={`grid gap-3 mb-2 ${isSuperUser ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <button
               type="button"
               onClick={() => setFormData({ ...formData, is_staff: false })}
@@ -67,18 +102,21 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading }: Create
               <GraduationCap className="w-6 h-6" />
               <span className="text-xs font-bold">Student</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, is_staff: true })}
-              className={`p-3 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
-                formData.is_staff 
-                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300' 
-                  : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:border-slate-300'
-              }`}
-            >
-              <Shield className="w-6 h-6" />
-              <span className="text-xs font-bold">Admin</span>
-            </button>
+            
+            {isSuperUser && (
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, is_staff: true })}
+                className={`p-3 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
+                  formData.is_staff 
+                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300' 
+                    : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:border-slate-300'
+                }`}
+              >
+                <Shield className="w-6 h-6" />
+                <span className="text-xs font-bold">Admin</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -102,13 +140,61 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading }: Create
             <input type="email" className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-blue-500" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
           </div>
 
+          {/* === AVATAR SECTION === */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+              <ImageIcon className="w-3 h-3" /> Profile Picture
+            </label>
+            
+            {/* Custom URL Input */}
+            <input 
+              type="url"
+              placeholder="Paste image URL here..."
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-blue-500" 
+              value={formData.profile?.avatar_url || ''} 
+              onChange={e => setFormData({ 
+                ...formData, 
+                profile: { ...formData.profile, avatar_url: e.target.value } 
+              })} 
+            />
+
+            {/* Prebuilt Options */}
+            <div>
+              <p className="text-[10px] text-slate-400 mb-2 uppercase font-bold tracking-wider">Or choose a preset:</p>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {PREBUILT_AVATARS.map((url, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setFormData({ 
+                      ...formData, 
+                      profile: { ...formData.profile, avatar_url: url } 
+                    })}
+                    className={`relative w-10 h-10 rounded-full overflow-hidden border-2 transition-all shrink-0 ${
+                      formData.profile?.avatar_url === url 
+                        ? 'border-blue-500 ring-2 ring-blue-500/20 scale-110' 
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <img src={url} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
+                    {formData.profile?.avatar_url === url && (
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Password</label>
               <input type="password" className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-blue-500" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required minLength={6} />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Confirm Password</label>
+              <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Confirm</label>
               <input type="password" className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-blue-500" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} required minLength={6} />
             </div>
           </div>
@@ -119,7 +205,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading }: Create
             </div>
           )}
 
-          <div className="pt-4 flex justify-end gap-3">
+          <div className="pt-4 flex justify-end gap-3 shrink-0">
             <button type="button" onClick={onClose} className="px-4 py-2 text-slate-500 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">Cancel</button>
             <button type="submit" disabled={isLoading} className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-sm rounded-xl hover:opacity-90 flex items-center gap-2 transition-all">
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />} Create User
