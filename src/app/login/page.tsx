@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginAdmin } from '@/services/auth';
-import { Lock, User, AlertCircle } from 'lucide-react';
-import LoadingScreen from '@/components/ui/loading-screen'; // Import custom loader
+import { api } from '@/lib/api'; // Import api to fetch user details
+import { Lock, User, AlertCircle, ShieldAlert } from 'lucide-react';
+import LoadingScreen from '@/components/ui/loading-screen';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,21 +20,37 @@ export default function LoginPage() {
     setError('');
 
     try {
+      // 1. Perform Authentication
       await loginAdmin(username, password);
-      // Wait a moment so user sees the nice animation before redirect
+
+      // 2. Security Check: Verify User Role
+      // We fetch the current user details to ensure they are an Admin
+      const { data: user } = await api.get('/users/me/');
+
+      if (!user.is_staff) {
+        // BLOCK ACCESS: If user is not staff (Student)
+        // Clear any stored tokens immediately
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        
+        throw new Error("Access Restricted: Students cannot access the Admin Portal.");
+      }
+
+      // 3. Success: Redirect to Dashboard
+      // Wait a moment so user sees the loading animation
       setTimeout(() => {
         router.push('/admin/tree');
       }, 800);
+
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Invalid username or password');
-      setIsLoading(false); // Only stop loading on error
+      setIsLoading(false);
     }
   };
 
-  // Show full screen loader when submitting
   if (isLoading) {
-    return <LoadingScreen message="Authenticating..." />;
+    return <LoadingScreen message="Verifying Credentials..." />;
   }
 
   return (
@@ -41,18 +58,31 @@ export default function LoginPage() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
         
         {/* Header */}
-        <div className="bg-blue-600 p-8 text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">QubitGyan Admin</h1>
-          <p className="text-blue-100 text-sm">Sign in to manage your content</p>
+        <div className="bg-blue-600 p-8 text-center relative overflow-hidden">
+          <div className="relative z-10">
+            <h1 className="text-2xl font-bold text-white mb-2">QubitGyan Admin</h1>
+            <p className="text-blue-100 text-sm">Secure Gateway for Staff Only</p>
+          </div>
+          
+          {/* Decorative Background Element */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
         </div>
 
         {/* Form */}
         <form onSubmit={handleLogin} className="p-8 space-y-6">
           
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2 border border-red-100">
-              <AlertCircle className="w-4 h-4" />
-              {error}
+            <div className={`p-3 rounded-lg text-sm flex items-start gap-2 border ${
+              error.includes("Restricted") 
+                ? "bg-amber-50 text-amber-700 border-amber-100" // Warning style for Students
+                : "bg-red-50 text-red-600 border-red-100"      // Error style for bad password
+            }`}>
+              {error.includes("Restricted") ? (
+                <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              )}
+              <span className="font-medium">{error}</span>
             </div>
           )}
 
@@ -64,7 +94,7 @@ export default function LoginPage() {
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-gray-700"
                 required
               />
             </div>
@@ -76,7 +106,7 @@ export default function LoginPage() {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-gray-700"
                 required
               />
             </div>

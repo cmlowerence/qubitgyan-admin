@@ -10,14 +10,19 @@ import {
   Mail, 
   UserPlus,
   Loader2,
-  MoreVertical
+  Lock // Added Lock icon for protected users
 } from 'lucide-react';
 import { User, getUsers, createUser, deleteUser, CreateUserPayload } from '@/services/users';
 import { CreateUserModal } from '@/components/users/CreateUserModal';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
 
+// Extend the User interface to include the new field
+interface ExtendedUser extends User {
+  is_superuser?: boolean;
+}
+
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<ExtendedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
@@ -71,7 +76,9 @@ export default function UsersPage() {
       await fetchUsers();
       showAlert('Deleted', 'User has been removed.', 'success');
     } catch (err: any) {
-      showAlert('Error', 'Failed to delete user.', 'danger');
+      // Handle the 403 Forbidden we set up in the backend
+      const msg = err.response?.data?.error || 'Failed to delete user.';
+      showAlert('Error', msg, 'danger');
     } finally {
       setIsProcessing(false);
     }
@@ -81,6 +88,7 @@ export default function UsersPage() {
     setAlertState({ open: true, title, msg, type });
   };
 
+  // Client-side filtering
   const filteredUsers = users.filter(u => 
     u.username.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
@@ -90,7 +98,7 @@ export default function UsersPage() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto pb-24 space-y-6 animate-in fade-in duration-500">
       
-      {/* 1. Header & Actions */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div>
           <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
@@ -113,7 +121,7 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {/* 2. Search Toolbar */}
+      {/* Toolbar */}
       <div className="bg-white dark:bg-slate-900 p-3 md:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center gap-3">
         <div className="relative w-full md:flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -129,10 +137,9 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* 3. CONTENT AREA */}
-      
-      {/* A. MOBILE VIEW: Cards (Visible on small screens) */}
+      {/* Responsive Table/Cards */}
       <div className="grid grid-cols-1 gap-3 md:hidden">
+        {/* Mobile View */}
         {loading ? (
            [1,2,3].map(i => <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />)
         ) : filteredUsers.length === 0 ? (
@@ -141,40 +148,39 @@ export default function UsersPage() {
           filteredUsers.map((user) => (
             <div key={user.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-start justify-between gap-3">
               <div className="flex gap-3 min-w-0">
-                {/* Avatar */}
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-sm shrink-0 ${
-                  user.is_staff ? 'bg-purple-500' : 'bg-blue-500'
+                  user.is_staff ? (user.is_superuser ? 'bg-amber-500' : 'bg-purple-500') : 'bg-blue-500'
                 }`}>
                   {user.first_name?.[0]?.toUpperCase()}{user.last_name?.[0]?.toUpperCase()}
                 </div>
-                
-                {/* Info */}
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h4 className="font-bold text-slate-800 dark:text-slate-200 truncate">{user.first_name} {user.last_name}</h4>
-                    {user.is_staff && <Shield className="w-3 h-3 text-purple-500" />}
+                    {user.is_superuser && <Shield className="w-3 h-3 text-amber-500" />}
                   </div>
                   <p className="text-xs text-slate-400 font-mono truncate">@{user.username}</p>
-                  <div className="flex items-center gap-1 text-xs text-slate-500 mt-1.5">
-                    <Mail className="w-3 h-3" />
-                    <span className="truncate max-w-[150px]">{user.email}</span>
-                  </div>
                 </div>
               </div>
 
-              {/* Delete Button */}
-              <button 
-                onClick={() => setDeleteId(user.id)}
-                className="p-2 -mr-2 text-slate-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {/* HIDE DELETE BUTTON FOR SUPERUSER */}
+              {!user.is_superuser ? (
+                <button 
+                  onClick={() => setDeleteId(user.id)}
+                  className="p-2 -mr-2 text-slate-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              ) : (
+                <div className="p-2 text-slate-200 dark:text-slate-700">
+                  <Lock className="w-4 h-4" />
+                </div>
+              )}
             </div>
           ))
         )}
       </div>
 
-      {/* B. DESKTOP VIEW: Table (Hidden on mobile) */}
+      {/* Desktop Table View */}
       <div className="hidden md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
         <table className="w-full text-left border-collapse">
           <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
@@ -202,8 +208,9 @@ export default function UsersPage() {
                 <tr key={user.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
+                      {/* Avatar: Amber for Superuser, Purple for Admin, Blue for Student */}
                       <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-sm ${
-                        user.is_staff ? 'bg-purple-500' : 'bg-blue-500'
+                        user.is_staff ? (user.is_superuser ? 'bg-amber-500' : 'bg-purple-500') : 'bg-blue-500'
                       }`}>
                         {user.first_name?.[0]?.toUpperCase()}{user.last_name?.[0]?.toUpperCase()}
                       </div>
@@ -217,10 +224,16 @@ export default function UsersPage() {
                   </td>
                   <td className="p-4">
                     {user.is_staff ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                        <Shield className="w-3 h-3" /> Admin
+                      // Admin Badge
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap border ${
+                        user.is_superuser 
+                        ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
+                        : "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800"
+                      }`}>
+                        <Shield className="w-3 h-3" /> {user.is_superuser ? "Super Admin" : "Admin"}
                       </span>
                     ) : (
+                      // Student Badge
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                         <GraduationCap className="w-3 h-3" /> Student
                       </span>
@@ -228,9 +241,18 @@ export default function UsersPage() {
                   </td>
                   <td className="p-4 text-sm text-slate-500 dark:text-slate-400">{user.email}</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => setDeleteId(user.id)} className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    
+                    {/* HIDE DELETE BUTTON FOR SUPERUSER */}
+                    {!user.is_superuser ? (
+                      <button onClick={() => setDeleteId(user.id)} className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <div className="inline-block p-2 text-slate-200 dark:text-slate-700" title="Protected Account">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                    )}
+
                   </td>
                 </tr>
               ))
@@ -239,7 +261,6 @@ export default function UsersPage() {
         </table>
       </div>
 
-      {/* Modals */}
       <CreateUserModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSubmit={handleCreate} isLoading={isProcessing} />
       <ConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} title="Delete User?" message="This will permanently delete the account." confirmText="Delete Account" type="danger" isLoading={isProcessing} />
       <AlertModal isOpen={alertState.open} onClose={() => setAlertState(prev => ({ ...prev, open: false }))} title={alertState.title} message={alertState.msg} type={alertState.type} />

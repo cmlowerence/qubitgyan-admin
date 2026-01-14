@@ -1,17 +1,19 @@
+}
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Users, FileStack, FolderTree, RefreshCw, Loader2 } from 'lucide-react';
+import { Users, FileStack, FolderTree, RefreshCw, Loader2, Shield, GraduationCap } from 'lucide-react';
 import { api } from '@/lib/api';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
 
-// Define the shape of data from your new View
+// Updated Interface to match new Backend Response
 interface DashboardData {
   counts: {
     nodes: number;
-    users: number;
+    admins: number;    // Split count
+    students: number;  // Split count
     resources: number;
   };
   charts: {
@@ -28,7 +30,6 @@ export default function DashboardPage() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      // Calls your new optimized endpoint
       const res = await api.get('/dashboard/stats/');
       setData(res.data);
     } catch (error) {
@@ -54,43 +55,50 @@ export default function DashboardPage() {
   if (!data) return null;
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-20">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in duration-500">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Dashboard Overview</h1>
-          <p className="text-slate-500">Welcome back, Admin. Here is what's happening today.</p>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Dashboard Overview</h1>
+          <p className="text-slate-500 dark:text-slate-400">Welcome back. Here is the latest system data.</p>
         </div>
         <button 
           onClick={fetchStats}
-          className="self-start md:self-auto flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-50 transition-colors"
+          className="self-start md:self-auto flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <RefreshCw className="w-4 h-4" /> Refresh Data
         </button>
       </div>
 
-      {/* 1. Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* 1. Key Metrics Cards (Updated to 4 Columns) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatsCard 
-          title="Total Students" 
-          value={data.counts.users} 
-          icon={Users} 
+          title="Active Students" 
+          value={data.counts.students} 
+          icon={GraduationCap} 
+          color="bg-blue-500" 
+          trend="Learners"
+        />
+        <StatsCard 
+          title="Administrators" 
+          value={data.counts.admins} 
+          icon={Shield} 
           color="bg-purple-500" 
-          trend="Active"
+          trend="Staff"
         />
         <StatsCard 
           title="Learning Nodes" 
           value={data.counts.nodes} 
           icon={FolderTree} 
-          color="bg-blue-500" 
+          color="bg-amber-500" 
         />
         <StatsCard 
           title="Total Resources" 
           value={data.counts.resources} 
           icon={FileStack} 
           color="bg-emerald-500" 
-          trend="+5 New"
+          trend="Files"
         />
       </div>
 
