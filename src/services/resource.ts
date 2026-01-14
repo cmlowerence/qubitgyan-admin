@@ -8,7 +8,14 @@ import { Resource, CreateResourcePayload } from '@/types/resource';
 export const getResourcesByNode = async (nodeId: number): Promise<Resource[]> => {
   try {
     const response = await api.get(`/resources/?node=${nodeId}`);
-    // Backend returns a list of resources. The viewset handles ordering.
+    
+    // FIX: Handle Django Pagination. 
+    // If backend sends { count: 1, results: [...] }, we extract 'results'.
+    if (response.data && Array.isArray(response.data.results)) {
+      return response.data.results;
+    }
+
+    // Fallback: Check if backend sent a plain array [...]
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     throw handleApiError(error);
