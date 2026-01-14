@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Save, Loader2 } from 'lucide-react';
-import { Resource, ResourceType } from '@/types/resource';
+import { Resource } from '@/types/resource';
 import { api } from '@/lib/api';
 
 interface EditResourceModalProps {
@@ -28,10 +28,20 @@ export function EditResourceModal({ isOpen, onClose, onSave, resource, isLoading
     }
   }, [isOpen]);
 
+  // FIX: Reconstruct the Google Drive link from the ID
   useEffect(() => {
     if (resource) {
       setTitle(resource.title);
-      setUrl(resource.resource_type === 'PDF' ? (resource.google_drive_link || '') : (resource.external_url || ''));
+      
+      // LOGIC FIX: Check for ID, reconstruct link.
+      let currentUrl = '';
+      if (resource.resource_type === 'PDF' && resource.google_drive_id) {
+        currentUrl = `https://drive.google.com/file/d/${resource.google_drive_id}/view`;
+      } else if (resource.external_url) {
+        currentUrl = resource.external_url;
+      }
+      setUrl(currentUrl);
+
       if (resource.contexts && resource.contexts.length > 0) {
         setSelectedContext(resource.contexts[0].id.toString());
       }
@@ -44,6 +54,7 @@ export function EditResourceModal({ isOpen, onClose, onSave, resource, isLoading
     e.preventDefault();
     onSave(resource.id, {
       title,
+      // We send 'google_drive_link' back to backend so it can extract the new ID if changed
       google_drive_link: resource.resource_type === 'PDF' ? url : undefined,
       external_url: resource.resource_type !== 'PDF' ? url : undefined,
       context_ids: selectedContext ? [parseInt(selectedContext)] : []
@@ -72,7 +83,7 @@ export function EditResourceModal({ isOpen, onClose, onSave, resource, isLoading
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Context</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Context (Tag)</label>
             <select 
               value={selectedContext}
               onChange={e => setSelectedContext(e.target.value)}
