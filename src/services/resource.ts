@@ -5,6 +5,15 @@ import { Resource, CreateResourcePayload } from '@/types/resource';
  * Fetch all resources assigned to a specific node.
  * API: GET /api/v1/resources/?node=ID
  */
+ export const updateResource = async (id: number, payload: Partial < CreateResourcePayload > ): Promise < Resource > => {
+  try {
+    const response = await api.patch(`/resources/${id}/`, payload);
+    return response.data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};
+
 export const getResourcesByNode = async (nodeId: number): Promise<Resource[]> => {
   try {
     const response = await api.get(`/resources/?node=${nodeId}`);

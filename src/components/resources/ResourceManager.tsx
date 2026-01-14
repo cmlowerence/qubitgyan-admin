@@ -2,42 +2,51 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Loader2, FilePlus } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'; // Drag Library
 import { Resource, ResourceType } from '@/types/resource';
-import { getResourcesByNode, createResource, deleteResource } from '@/services/resource';
+import { getResourcesByNode, createResource, deleteResource, updateResource, reorderResources } from '@/services/resource';
 import { ResourceCard } from './ResourceCard';
 import { api } from '@/lib/api'; 
-import { AlertModal, ConfirmModal } from '@/components/ui/dialogs'; // Import Custom Dialogs
+import { AlertModal, ConfirmModal } from '@/components/ui/dialogs'; 
+import { EditResourceModal } from './EditResourceModal'; // Ensure you created this file
 
 export function ResourceManager({ nodeId }: { nodeId: number }) {
+  // Data State
   const [resources, setResources] = useState<Resource[]>([]);
   const [contexts, setContexts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
   
-  // Form State
+  // Create Form State
+  const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ResourceType>('PDF');
   const [url, setUrl] = useState('');
   const [selectedContext, setSelectedContext] = useState<string>('');
 
-  // -- NEW: Dialog States --
+  // Dialog & Modal States
   const [alertState, setAlertState] = useState<{ open: boolean; title: string; msg: string; type: 'success'|'danger' }>({
     open: false, title: '', msg: '', type: 'success'
   });
-  const [deleteId, setDeleteId] = useState<number | null>(null); // Stores ID pending deletion
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Edit State
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   useEffect(() => {
     fetchResources();
     fetchContexts();
   }, [nodeId]);
 
-  // --- Data Fetching ---
+  // --- Fetching ---
   const fetchResources = async () => {
     try {
       setLoading(true);
       const data = await getResourcesByNode(nodeId);
-      setResources(Array.isArray(data) ? data : []);
+      // Ensure we sort by 'order' if backend doesn't
+      const sorted = (Array.isArray(data) ? data : []).sort((a, b) => (a.order || 0) - (b.order || 0));
+      setResources(sorted);
     } catch (err) {
       setResources([]);
     } finally {
@@ -49,11 +58,9 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
     try {
       const response = await api.get('/contexts/');
       let data: any[] = [];
-      if (Array.isArray(response.data)) {
-        data = response.data;
-      } else if (response.data && Array.isArray(response.data.results)) {
-        data = response.data.results;
-      }
+      if (Array.isArray(response.data)) data = response.data;
+      else if (response.data && Array.isArray(response.data.results)) data = response.data.results;
+      
       setContexts(data);
       if (data.length > 0) setSelectedContext(data[0].id.toString());
     } catch (err) {
@@ -61,15 +68,35 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
     }
   };
 
-  // --- Handlers ---
+  // --- Drag & Drop Logic ---
+  const onDragEnd = async (result: DropResult) => {
+    if (!result.destination) return; // Dropped outside
+    if (result.destination.index === result.source.index) return; // Dropped in same place
 
+    // 1. Optimistic UI Update (Instant swap)
+    const newResources = Array.from(resources);
+    const [movedItem] = newResources.splice(result.source.index, 1);
+    newResources.splice(result.destination.index, 0, movedItem);
+    
+    setResources(newResources); // Update UI immediately
+
+    // 2. Send new order to backend
+    try {
+      const ids = newResources.map(r => r.id);
+      await reorderResources(ids);
+    } catch (err) {
+      showAlert('Reorder Failed', 'Could not save new order.', 'danger');
+      fetchResources(); // Revert on error
+    }
+  };
+
+  // --- Handlers ---
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedContext) {
-      showAlert('Missing Context', 'Please select a context (JEE/NEET) first.', 'danger');
+      showAlert('Missing Context', 'Please select a context.', 'danger');
       return;
     }
-
     setAdding(true);
     try {
       await createResource({
@@ -80,10 +107,9 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
         google_drive_link: type === 'PDF' ? url : undefined,
         external_url: (type === 'VIDEO' || type === 'LINK') ? url : undefined,
       });
-      
       setTitle('');
       setUrl('');
-      fetchResources();
+      await fetchResources();
       showAlert('Success', 'Resource added successfully!', 'success');
     } catch (err: any) {
       const msg = err.response?.data ? JSON.stringify(err.response.data) : err.message;
@@ -93,19 +119,27 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
     }
   };
 
-  // Triggered when user clicks "Delete" on a card
-  const requestDelete = (id: number) => {
-    setDeleteId(id); // Opens the confirmation modal
+  const handleEditSave = async (id: number, data: any) => {
+    setIsSavingEdit(true);
+    try {
+      await updateResource(id, data);
+      setEditingResource(null); // Close modal
+      await fetchResources(); // Refresh list
+      showAlert('Success', 'Resource updated!', 'success');
+    } catch (err: any) {
+      showAlert('Update Failed', err.message, 'danger');
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
-  // Triggered when user confirms in the modal
   const confirmDelete = async () => {
     if (!deleteId) return;
     setIsDeleting(true);
     try {
       await deleteResource(deleteId);
       await fetchResources();
-      setDeleteId(null); // Close modal
+      setDeleteId(null);
     } catch (err: any) {
       showAlert('Delete Failed', err.message, 'danger');
     } finally {
@@ -113,7 +147,6 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
     }
   };
 
-  // Helper to open alert
   const showAlert = (title: string, msg: string, type: 'success' | 'danger') => {
     setAlertState({ open: true, title, msg, type });
   };
@@ -121,7 +154,7 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
   return (
     <div className="space-y-6">
       {/* Upload Form */}
-      <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-6 space-y-4">
+      <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-6 space-y-4 shadow-sm">
         <h3 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2">
           <FilePlus className="w-4 h-4" /> New Resource
         </h3>
@@ -134,95 +167,68 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
             onChange={e => setTitle(e.target.value)}
             required
           />
-          
           <div className="flex gap-2">
-            <select 
-              className="flex-1 p-2.5 border rounded-lg text-sm bg-white shadow-sm"
-              value={type}
-              onChange={e => setType(e.target.value as ResourceType)}
-            >
+            <select className="flex-1 p-2.5 border rounded-lg text-sm bg-white shadow-sm" value={type} onChange={e => setType(e.target.value as ResourceType)}>
               <option value="PDF">Drive PDF</option>
               <option value="VIDEO">Video Link</option>
               <option value="LINK">External Link</option>
             </select>
-
-            <select 
-              className="flex-1 p-2.5 border rounded-lg text-sm bg-white shadow-sm text-blue-600 font-bold"
-              value={selectedContext}
-              onChange={e => setSelectedContext(e.target.value)}
-              required
-            >
+            <select className="flex-1 p-2.5 border rounded-lg text-sm bg-white shadow-sm text-blue-600 font-bold" value={selectedContext} onChange={e => setSelectedContext(e.target.value)} required>
               <option value="">Select Context</option>
-              {Array.isArray(contexts) && contexts.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {Array.isArray(contexts) && contexts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
         </div>
-
-        <input 
-          placeholder={type === 'PDF' ? "Paste Google Drive Link" : "Paste URL"}
-          className="w-full p-2.5 border rounded-lg text-sm outline-none shadow-sm"
-          value={url}
-          onChange={e => setUrl(e.target.value)}
-          required
-        />
-
-        <button 
-          disabled={adding || !selectedContext}
-          className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
-        >
+        <input placeholder={type === 'PDF' ? "Paste Google Drive Link" : "Paste URL"} className="w-full p-2.5 border rounded-lg text-sm outline-none shadow-sm" value={url} onChange={e => setUrl(e.target.value)} required />
+        <button disabled={adding || !selectedContext} className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50">
           {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Add to Topic</>}
         </button>
-        
-        {(!selectedContext || contexts.length === 0) && (
-          <p className="text-[10px] text-red-500 font-bold text-center italic">
-            {contexts.length === 0 ? "Loading contexts..." : "Please select a context to continue"}
-          </p>
-        )}
       </form>
 
-      {/* Resource List */}
+      {/* --- DRAGGABLE LIST --- */}
       <div className="space-y-3">
         {loading ? (
           <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-slate-200" /></div>
-        ) : (Array.isArray(resources) && resources.length > 0) ? (
-          resources.map(res => (
-            <ResourceCard 
-              key={res.id} 
-              resource={res} 
-              // Pass the requestDelete function instead of deleting directly
-              onDelete={requestDelete} 
-            />
-          ))
+        ) : resources.length === 0 ? (
+          <div className="text-center p-12 border-2 border-dashed rounded-2xl text-slate-300 text-sm font-medium">No materials uploaded yet.</div>
         ) : (
-          <div className="text-center p-12 border-2 border-dashed rounded-2xl text-slate-300 text-sm font-medium">
-            No materials uploaded yet.
-          </div>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="resources-list">
+              {(provided) => (
+                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                  {resources.map((res, index) => (
+                    <Draggable key={res.id} draggableId={res.id.toString()} index={index}>
+                      {(provided) => (
+                        <div ref={provided.innerRef} {...provided.draggableProps}>
+                          <ResourceCard 
+                            resource={res} 
+                            onDelete={(id) => setDeleteId(id)}
+                            onEdit={(r) => setEditingResource(r)} // Open Edit Modal
+                            dragHandleProps={provided.dragHandleProps} // Grip Handle
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         )}
       </div>
 
       {/* --- MODALS --- */}
+      <AlertModal isOpen={alertState.open} onClose={() => setAlertState(prev => ({ ...prev, open: false }))} title={alertState.title} message={alertState.msg} type={alertState.type} />
       
-      {/* 1. Alert Modal (Success/Error) */}
-      <AlertModal 
-        isOpen={alertState.open}
-        onClose={() => setAlertState(prev => ({ ...prev, open: false }))}
-        title={alertState.title}
-        message={alertState.msg}
-        type={alertState.type}
-      />
+      <ConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={confirmDelete} title="Delete Resource?" message="Are you sure? This cannot be undone." confirmText="Delete" type="danger" isLoading={isDeleting} />
 
-      {/* 2. Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        onConfirm={confirmDelete}
-        title="Delete Resource?"
-        message="Are you sure you want to remove this resource? This action cannot be undone."
-        confirmText="Yes, Delete"
-        type="danger"
-        isLoading={isDeleting}
+      <EditResourceModal 
+        isOpen={!!editingResource} 
+        onClose={() => setEditingResource(null)} 
+        resource={editingResource}
+        onSave={handleEditSave}
+        isLoading={isSavingEdit}
       />
     </div>
   );
