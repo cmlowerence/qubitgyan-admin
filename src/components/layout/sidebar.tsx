@@ -57,7 +57,7 @@ export function AdminSidebar({ className }: { className?: string }) {
       <aside className={cn("flex flex-col h-full bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800", className)}>
         {/* Header */}
         <div className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800 shrink-0">
-          <Logo variant="dark" />
+          <Logo />
         </div>
 
         {/* Navigation */}
