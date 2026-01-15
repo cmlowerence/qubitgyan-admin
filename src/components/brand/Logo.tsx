@@ -5,96 +5,109 @@ import { cn } from '@/lib/utils';
 
 interface LogoProps {
   className?: string;
+  // Variant is kept for interface compatibility but ignored for coloring
   variant?: 'light' | 'dark';
 }
 
-export function Logo({ className, variant = 'light' }: LogoProps) {
-  // If the parent doesn't specify, we default to 'light' (Dark Text)
-  // You can pass variant="dark" manually if you are on a black background.
-  const isDark = variant === 'dark';
-
-  const colors = {
-    // Light Mode: Text is Slate-900 (Black-ish)
-    // Dark Mode: Text is White
-    text: isDark ? '#FFFFFF' : '#0F172A',
-    
-    // Icon: Slightly lighter than text to create depth
-    iconMain: isDark ? '#F8FAFC' : '#1E293B',
-    
-    // The "Knowledge" Gold
-    gold: '#F59E0B',
+export function Logo({ className }: LogoProps) {
+  // --- STATIC COLOR PALETTE (Universal visibility) ---
+  const c = {
+    // Deep Slate Blue: Looks good on white, provides base for glow on dark.
+    primary: '#1E293B', 
+    // Lighter, transparent version for background elements
+    primaryTransparent: 'rgba(30, 41, 59, 0.08)',
+    // Gold Gradients
+    goldStart: '#FBBF24',
+    goldEnd: '#B45309',
   };
 
   return (
-    <div className={cn("select-none relative z-10", className)}>
+    <div className={cn("select-none relative z-10 p-1", className)}>
       <svg
-        width="160" // Increased width to prevent cutting off
-        height="45"
-        viewBox="0 0 160 45"
+        width="170"
+        height="48"
+        viewBox="0 0 170 48"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="block"
+        className="block overflow-visible" // overflow-visible ensures glow isn't cut off
       >
         <defs>
-          <linearGradient id="goldGradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#FBBF24" />
-            <stop offset="100%" stopColor="#D97706" />
+          {/* The Quantum Gold Gradient */}
+          <linearGradient id="goldGradStatic" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={c.goldStart} />
+            <stop offset="100%" stopColor={c.goldEnd} />
           </linearGradient>
+
+          {/* THE UNIVERSAL VISIBILITY FILTER */}
+          <filter id="universalGlow" x="-50%" y="-50%" width="200%" height="200%">
+            {/* Layer 1: Tight Gold outline for definition */}
+            <feDropShadow dx="0" dy="0" stdDeviation="0.5" floodColor={c.goldStart} floodOpacity="0.5" result="goldGlow"/>
+            {/* Layer 2: Softer White halo to lift dark elements off dark backgrounds */}
+            <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#FFFFFF" floodOpacity="0.8" in="goldGlow" result="finalGlow"/>
+            <feMerge>
+                <feMergeNode in="finalGlow" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
-        {/* --- ICON GROUP --- */}
-        <g transform="translate(0, 2)">
-          {/* Hexagon Background - Increased Opacity for visibility */}
-          <path
-            d="M20 0L37.32 10V30L20 40L2.68 30V10L20 0Z"
-            fill={colors.iconMain}
-            opacity={isDark ? "0.2" : "0.1"} 
-          />
-          
-          {/* Circuit Bracket */}
-          <path
-            d="M12 14C12 11.5 14.5 10 17 10H23C25.5 10 28 11.5 28 14V22H24V14H16V26H21V30H17C14.5 30 12 28.5 12 26V14Z"
-            fill={colors.iconMain}
-          />
+        {/* Apply the universal glow to the entire logo group */}
+        <g filter="url(#universalGlow)" transform="translate(2, 2)">
+            
+          {/* --- ICON: The Hex-Qubit Core --- */}
+          <g>
+            {/* Background Hexagon Structure */}
+            <path
+              d="M20 0L37.32 10V30L20 40L2.68 30V10L20 0Z"
+              fill={c.primaryTransparent}
+              stroke={c.primary}
+              strokeWidth="0.5"
+              strokeOpacity="0.2"
+            />
+            
+            {/* The 'Q' Circuit Bracket - Bold and Solid */}
+            <path
+              d="M12 14C12 11.5 14.5 10 17 10H23C25.5 10 28 11.5 28 14V22H24V14H16V26H21V30H17C14.5 30 12 28.5 12 26V14Z"
+              fill={c.primary}
+            />
 
-          {/* Gold Core */}
-          <circle cx="28" cy="28" r="5" fill="url(#goldGradient)" />
-          <circle cx="28" cy="28" r="2" fill="#FFF" />
-        </g>
+            {/* The Quantum Bit (Gold Core) */}
+            <circle cx="28" cy="28" r="5" fill="url(#goldGradStatic)" />
+            
+            {/* The State Dot (Pure White for contrast against gold) */}
+            <circle cx="28" cy="28" r="2" fill="#FFFFFF" />
+          </g>
 
-        {/* --- TEXT GROUP --- */}
-        {/* Pushed X to 55 to fix overlapping with icon */}
-        <g transform="translate(55, 10)">
-          {/* Q */}
-          <path d="M8 0H4C1.8 0 0 1.8 0 4V16C0 18.2 1.8 20 4 20H8C10.2 20 12 18.2 12 16V13L15 16H19L15 12C15.6 11.2 16 10.1 16 9V4C16 1.8 14.2 0 12 0H8ZM12 9C12 10.1 11.1 11 10 11H6C4.9 11 4 10.1 4 9V4C4 2.9 4.9 2 6 2H10C11.1 2 12 2.9 12 4V9Z" fill={colors.text} />
-          
-          {/* U */}
-          <path d="M21 0V14C21 17.3 23.7 20 27 20C30.3 20 33 17.3 33 14V0H29V14C29 15.1 28.1 16 27 16C25.9 16 25 15.1 25 14V0H21Z" fill={colors.text} />
+          {/* --- TYPOGRAPHY: Structural "QUBIT" --- */}
+          {/* Pushed right to accommodate the wider glow */}
+          <g transform="translate(52, 10)">
+            {/* Q */}
+            <path d="M10 0H6C2.7 0 0 2.7 0 6V14C0 17.3 2.7 20 6 20H10C13.3 20 16 17.3 16 14V13L18 15L21 12L17 8.8C17.6 8 18 7.1 18 6C18 2.7 15.3 0 12 0H10ZM10 6C10 8.2 8.2 10 6 10C3.8 10 2 8.2 2 6C2 3.8 3.8 2 6 2H10C12.2 2 14 3.8 14 6V8.8L11.2 11.6C10.8 11.2 10.4 10.8 10 10.4V6Z" fill={c.primary} />
+            {/* U */}
+            <path d="M26 0V13C26 16.9 29.1 20 33 20C36.9 20 40 16.9 40 13V0H34V13C34 13.6 33.6 14 33 14C32.4 14 32 13.6 32 13V0H26Z" fill={c.primary} />
+            {/* B */}
+            <path d="M46 0V20H53C56.9 20 60 16.9 60 13C60 10.6 58.8 8.6 56.9 7.3C58.2 6.3 59 4.8 59 3C59 1.3 57.7 0 56 0H46ZM52 5C53.1 5 54 5.9 54 7C54 8.1 53.1 9 52 9H50V5H52ZM52 14C53.1 14 54 14.9 54 16C54 17.1 53.1 18 52 18H50V14H52Z" fill={c.primary} />
+            {/* I */}
+            <path d="M66 0V20H72V0H66Z" fill={c.primary} />
+            {/* T */}
+            <path d="M78 0V5H82V20H88V5H92V0H78Z" fill={c.primary} />
+          </g>
 
-          {/* B */}
-          <path d="M38 0V20H46C49.3 20 52 17.3 52 14C52 11.8 50.8 9.9 49 8.9C50.2 8.2 51 6.9 51 5.5C51 2.5 48.5 0 45.5 0H38ZM42 4H45.5C46.3 4 47 4.7 47 5.5C47 6.3 46.3 7 45.5 7H42V4ZM42 11H46C47.7 11 49 12.3 49 14C49 15.7 47.7 17 46 17H42V11Z" fill={colors.text} />
-
-          {/* I */}
-          <path d="M57 0V20H61V0H57Z" fill={colors.text} />
-
-          {/* T */}
-          <path d="M66 0V4H70V20H74V4H78V0H66Z" fill={colors.text} />
-        </g>
-
-        {/* --- SUBTEXT "GYAN" --- */}
-        {/* Aligned with new text position */}
-        <g transform="translate(56, 36)">
-          <text 
-            fontSize="10" 
-            fontWeight="bold" 
-            fontFamily="serif" 
-            fill={colors.gold} 
-            letterSpacing="0.25em"
-            style={{ textTransform: 'uppercase' }}
-          >
-            ज्ञान
-          </text>
-          <rect x="0" y="3" width="70" height="1.5" rx="0.75" fill={colors.gold} opacity="0.4" />
+          {/* --- SUBTEXT: "GYAN" --- */}
+          <g transform="translate(54, 37)">
+            <text 
+              fontSize="11" 
+              fontWeight="900" 
+              fontFamily="serif" 
+              fill="url(#goldGradStatic)" 
+              letterSpacing="0.3em"
+              style={{ textTransform: 'uppercase' }}
+            >
+              ज्ञान
+            </text>
+            {/* Decorative gold underline bar */}
+            <rect x="0" y="4" width="75" height="2" rx="1" fill="url(#goldGradStatic)" opacity="0.6" />
+          </g>
         </g>
       </svg>
     </div>
