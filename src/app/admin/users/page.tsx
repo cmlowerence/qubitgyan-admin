@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Search, Trash2, Shield, GraduationCap, 
-  UserPlus, Lock, UserCheck, Ban, Info, Pencil, MoreHorizontal 
+  UserPlus, Lock, UserCheck, Ban, Info, Pencil
 } from 'lucide-react';
 import { 
   User, getUsers, createUser, deleteUser, toggleSuspendUser, updateUser, 
@@ -15,12 +15,12 @@ import { EditUserModal } from '@/components/users/EditUserModal';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
 
 export default function UsersPage() {
+  // ... (State logic remains exactly the same as before)
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
-  // Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -30,7 +30,7 @@ export default function UsersPage() {
     open: false, title: '', msg: '', type: 'success'
   });
 
-  // 1. Fetch Data
+  // ... (Effects and Handlers remain exactly the same)
   useEffect(() => {
     const init = async () => {
       try {
@@ -55,7 +55,6 @@ export default function UsersPage() {
     setUsers(data);
   };
 
-  // 2. Handlers
   const handleCreate = async (data: CreateUserPayload) => {
     setIsProcessing(true);
     try {
@@ -106,18 +105,13 @@ export default function UsersPage() {
     if (!suspendId) return;
     const userToToggle = users.find(u => u.id === suspendId);
     if (!userToToggle) return;
-
     const newState = !userToToggle.is_suspended;
     setIsProcessing(true);
     try {
       await toggleSuspendUser(suspendId, newState);
       setSuspendId(null);
       await fetchUsers();
-      showAlert(
-        newState ? 'Suspended' : 'Activated', 
-        `User access has been ${newState ? 'blocked' : 'restored'}.`, 
-        'success'
-      );
+      showAlert(newState ? 'Suspended' : 'Activated', `User access has been ${newState ? 'blocked' : 'restored'}.`, 'success');
     } catch (err: any) {
       showAlert('Error', 'Failed to update status.', 'danger');
     } finally {
@@ -129,7 +123,6 @@ export default function UsersPage() {
     setAlertState({ open: true, title, msg, type });
   };
 
-  // 3. Render Helpers
   const filteredUsers = users.filter(u => 
     u.username.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
@@ -142,173 +135,173 @@ export default function UsersPage() {
     return !targetUser.is_staff;
   };
 
-  // Shared Action Buttons Component (To avoid code duplication between Mobile/Desktop)
-  const ActionButtons = ({ user }: { user: User }) => {
+  // Shared Action Buttons
+  const ActionButtons = ({ user, size = 'normal' }: { user: User, size?: 'small' | 'normal' }) => {
+    const btnClass = size === 'small' ? 'p-1.5' : 'p-2';
+    const iconClass = size === 'small' ? 'w-3.5 h-3.5' : 'w-4 h-4';
+
     if (!canManageUser(user)) {
       return (
-        <div className="inline-flex items-center gap-2 p-2 text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg text-xs font-medium" title="Access Protected">
-          <Lock className="w-3 h-3" /> Protected
+        <div className="inline-flex items-center gap-1.5 p-1.5 text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg text-[10px] font-medium uppercase tracking-wide border border-slate-100 dark:border-slate-700">
+          <Lock className={iconClass} /> Protected
         </div>
       );
     }
     
     return (
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-1.5">
         <button 
           onClick={() => setSuspendId(user.id)}
-          className={`p-2 rounded-lg transition-colors border ${
+          className={`${btnClass} rounded-lg transition-colors border ${
             user.is_suspended 
               ? "text-emerald-600 bg-emerald-50 border-emerald-100 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800" 
               : "text-amber-500 bg-amber-50 border-amber-100 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800"
           }`}
-          title={user.is_suspended ? "Unsuspend" : "Suspend"}
         >
-          {user.is_suspended ? <UserCheck className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+          {user.is_suspended ? <UserCheck className={iconClass} /> : <Ban className={iconClass} />}
         </button>
 
         <button 
           onClick={() => setEditUser(user)}
-          className="p-2 text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300 rounded-lg transition-colors"
-          title="Edit"
+          className={`${btnClass} text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300 rounded-lg transition-colors`}
         >
-          <Pencil className="w-4 h-4" />
+          <Pencil className={iconClass} />
         </button>
 
         <button 
           onClick={() => setDeleteId(user.id)}
-          className="p-2 text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 rounded-lg transition-colors"
-          title="Delete"
+          className={`${btnClass} text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 rounded-lg transition-colors`}
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className={iconClass} />
         </button>
       </div>
     );
   };
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto pb-24 space-y-6 animate-in fade-in duration-500">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto pb-24 space-y-5 animate-in fade-in duration-500">
       
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+      {/* 1. COMPACT RESPONSIVE HEADER */}
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
-              <Users className="w-6 h-6 md:w-8 md:h-8 text-indigo-600 dark:text-indigo-400" />
-            </div>
+          <h1 className="text-lg md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2 md:gap-3">
+            <span className="p-1.5 md:p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
+              <Users className="w-5 h-5 md:w-8 md:h-8 text-indigo-600 dark:text-indigo-400" />
+            </span>
             User Management
           </h1>
-          <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 mt-2 max-w-lg">
-            Manage student access and administrator privileges.
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-lg leading-relaxed">
+            Manage access and permissions.
           </p>
         </div>
         
         <button 
           onClick={() => setIsCreateOpen(true)}
-          className="w-full md:w-auto px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:opacity-90 shadow-lg shadow-slate-200 dark:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95"
+          className="w-full md:w-auto px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:opacity-90 shadow-lg shadow-slate-200 dark:shadow-none transition-all flex items-center justify-center gap-2 text-sm active:scale-95"
         >
-          <UserPlus className="w-5 h-5" />
+          <UserPlus className="w-4 h-4" />
           Add User
         </button>
       </div>
 
-      {/* Toolbar */}
-      <div className="bg-white dark:bg-slate-900 p-3 md:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
+      {/* 2. RESPONSIVE SEARCH BAR */}
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
         <div className="relative w-full sm:flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input 
-            placeholder="Search users..." 
-            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/20"
+            placeholder="Search by name, email or role..." 
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-none rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/20"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="hidden sm:block text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
-          {filteredUsers.length} Users Found
-        </div>
       </div>
 
-      {/* ==============================================
-          MOBILE VIEW (Cards) - Visible < md breakpoint
-         ============================================== */}
-      <div className="grid grid-cols-1 gap-4 md:hidden">
+      {/* 3. MOBILE CARDS (Visible < md) - Redesigned to fix "breaking out" */}
+      <div className="grid grid-cols-1 gap-3 md:hidden">
         {loading ? (
            [1,2,3].map(i => (
-             <div key={i} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm animate-pulse space-y-4">
-               <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full" />
-                 <div className="space-y-2">
-                   <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded" />
-                   <div className="h-3 w-20 bg-slate-100 dark:bg-slate-800 rounded" />
-                 </div>
-               </div>
-             </div>
+             <div key={i} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm animate-pulse h-32" />
            ))
         ) : filteredUsers.length === 0 ? (
-          <div className="text-center py-10 text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div className="text-center py-8 text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-slate-200">
              No users found.
           </div>
         ) : (
           filteredUsers.map(user => (
-            <div key={user.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
-              {/* Card Header: Identity */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
+            <div key={user.id} className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3">
+              
+              {/* Top: Identity */}
+              <div className="flex items-start gap-3">
+                 {/* Avatar */}
+                 <div className="flex-shrink-0">
                     {user.avatar_url ? (
-                        <img src={user.avatar_url} alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
+                        <img src={user.avatar_url} alt="Av" className="w-10 h-10 rounded-full object-cover border border-slate-100 dark:border-slate-700" />
                     ) : (
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-sm ${
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-sm ${
                         user.is_staff ? (user.is_superuser ? 'bg-amber-500' : 'bg-purple-500') : 'bg-blue-500'
                       }`}>
                         {user.first_name?.[0]?.toUpperCase()}{user.last_name?.[0]?.toUpperCase()}
                       </div>
                     )}
-                    <div>
-                      <div className="font-bold text-slate-900 dark:text-white text-lg">
-                        {user.first_name} {user.last_name}
-                      </div>
-                      <div className="text-sm text-slate-500 font-mono">@{user.username}</div>
-                    </div>
-                </div>
-              </div>
-
-              {/* Card Body: Badges */}
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                {user.is_staff ? (
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
-                    user.is_superuser 
-                    ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
-                    : "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800"
-                  }`}>
-                    <Shield className="w-3 h-3" /> {user.is_superuser ? "Super Admin" : "Admin"}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                    <GraduationCap className="w-3 h-3" /> Student
-                  </span>
-                )}
-                {user.is_suspended && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded border border-red-200">
-                    <Ban className="w-3 h-3" /> Suspended
-                  </span>
-                )}
-              </div>
-
-              {/* Card Footer: Metadata & Actions */}
-              <div className="flex items-center justify-between pt-2">
-                 <div className="text-xs text-slate-400">
-                   {user.created_by ? `By @${user.created_by}` : 'System'}
                  </div>
-                 <ActionButtons user={user} />
+
+                 {/* Name Info (with Truncation logic) */}
+                 <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                       <h3 className="font-bold text-slate-900 dark:text-white text-base truncate pr-2">
+                         {user.first_name} {user.last_name}
+                       </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 font-mono truncate">@{user.username}</p>
+                    
+                    {/* Badges inline to save vertical space */}
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {user.is_staff ? (
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                          user.is_superuser 
+                          ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
+                          : "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800"
+                        }`}>
+                          <Shield className="w-2.5 h-2.5" /> {user.is_superuser ? "Super Admin" : "Admin"}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                          <GraduationCap className="w-2.5 h-2.5" /> Student
+                        </span>
+                      )}
+                      {user.is_suspended && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200">
+                          <Ban className="w-2.5 h-2.5" /> Suspended
+                        </span>
+                      )}
+                    </div>
+                 </div>
               </div>
+
+              {/* Footer: Smart Wrapping Layout */}
+              {/* Flex-wrap ensures buttons drop to new line if name is too long */}
+              <div className="pt-2 mt-1 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-y-2 gap-x-2">
+                 
+                 {/* Created By Info */}
+                 <div className="flex items-center gap-1 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-full max-w-full">
+                   <Info className="w-3 h-3 flex-shrink-0" />
+                   <span className="truncate">By @{user.created_by || 'system'}</span>
+                 </div>
+
+                 {/* Actions - Pushed to right, but wraps if needed */}
+                 <div className="ml-auto">
+                    <ActionButtons user={user} size="small" />
+                 </div>
+              </div>
+
             </div>
           ))
         )}
       </div>
 
 
-      {/* ==============================================
-          DESKTOP VIEW (Table) - Visible >= md breakpoint
-         ============================================== */}
+      {/* 4. DESKTOP TABLE (Visible >= md) - Standard Table View */}
       <div className="hidden md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm min-h-[400px]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -335,7 +328,6 @@ export default function UsersPage() {
               ) : (
                 filteredUsers.map((user) => (
                   <tr key={user.id} className={`group transition-colors ${user.is_suspended ? 'bg-red-50/50 dark:bg-red-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
-                    {/* Identity */}
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {user.avatar_url ? (
@@ -355,8 +347,6 @@ export default function UsersPage() {
                         </div>
                       </div>
                     </td>
-                    
-                    {/* Role & Status */}
                     <td className="p-4">
                       <div className="flex flex-col items-start gap-1.5">
                         {user.is_staff ? (
@@ -372,7 +362,6 @@ export default function UsersPage() {
                             <GraduationCap className="w-3 h-3" /> Student
                           </span>
                         )}
-
                         {user.is_suspended && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded border border-red-200">
                             <Ban className="w-3 h-3" /> Suspended
@@ -380,8 +369,6 @@ export default function UsersPage() {
                         )}
                       </div>
                     </td>
-
-                    {/* Created By */}
                     <td className="p-4">
                       {user.created_by ? (
                         <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -392,8 +379,6 @@ export default function UsersPage() {
                         <span className="text-xs text-slate-300 italic">System</span>
                       )}
                     </td>
-
-                    {/* Actions */}
                     <td className="p-4 text-right">
                        <ActionButtons user={user} />
                     </td>
@@ -405,50 +390,12 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Modals remain unchanged */}
-      <CreateUserModal 
-        isOpen={isCreateOpen} 
-        onClose={() => setIsCreateOpen(false)} 
-        onSubmit={handleCreate} 
-        isLoading={isProcessing}
-        currentUser={currentUser}
-      />
-      <EditUserModal 
-        isOpen={!!editUser}
-        onClose={() => setEditUser(null)}
-        onSubmit={handleUpdate}
-        isLoading={isProcessing}
-        user={editUser}
-      />
-      <ConfirmModal 
-        isOpen={!!deleteId} 
-        onClose={() => setDeleteId(null)} 
-        onConfirm={handleDelete} 
-        title="Delete User?" 
-        message="This will permanently delete the account. This action cannot be undone." 
-        confirmText="Delete Account" 
-        type="danger" 
-        isLoading={isProcessing}
-      />
-      <ConfirmModal
-        isOpen={!!suspendId}
-        onClose={() => setSuspendId(null)}
-        onConfirm={handleToggleSuspend}
-        title={users.find(u => u.id === suspendId)?.is_suspended ? "Reactivate User?" : "Suspend User?"}
-        message={users.find(u => u.id === suspendId)?.is_suspended 
-          ? "The user will regain access to the platform immediately." 
-          : "The user will be blocked from logging in until reactivated."}
-        confirmText={users.find(u => u.id === suspendId)?.is_suspended ? "Activate" : "Suspend"}
-        type={users.find(u => u.id === suspendId)?.is_suspended ? "success" : "danger"}
-        isLoading={isProcessing}
-      />
-      <AlertModal 
-        isOpen={alertState.open} 
-        onClose={() => setAlertState(prev => ({ ...prev, open: false }))} 
-        title={alertState.title} 
-        message={alertState.msg} 
-        type={alertState.type} 
-      />
+      {/* Modals & Dialogs (Unchanged) */}
+      <CreateUserModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSubmit={handleCreate} isLoading={isProcessing} currentUser={currentUser} />
+      <EditUserModal isOpen={!!editUser} onClose={() => setEditUser(null)} onSubmit={handleUpdate} isLoading={isProcessing} user={editUser} />
+      <ConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} title="Delete User?" message="Permanent action." confirmText="Delete" type="danger" isLoading={isProcessing} />
+      <ConfirmModal isOpen={!!suspendId} onClose={() => setSuspendId(null)} onConfirm={handleToggleSuspend} title={users.find(u => u.id === suspendId)?.is_suspended ? "Activate?" : "Suspend?"} message="Toggle access." confirmText={users.find(u => u.id === suspendId)?.is_suspended ? "Activate" : "Suspend"} type={users.find(u => u.id === suspendId)?.is_suspended ? "success" : "danger"} isLoading={isProcessing} />
+      <AlertModal isOpen={alertState.open} onClose={() => setAlertState(prev => ({ ...prev, open: false }))} title={alertState.title} message={alertState.msg} type={alertState.type} />
     </div>
   );
 }
