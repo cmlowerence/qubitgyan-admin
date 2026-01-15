@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   Filter, 
-  FileStack, 
+  FileStack,
+  LibraryBig,
   Loader2, 
   RefreshCw 
 } from 'lucide-react';
@@ -118,7 +119,7 @@ export default function GlobalLibraryPage() {
         <div>
           <h1 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-3">
             <div className="p-2 bg-blue-50 rounded-lg">
-              <FileStack className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+              <LibraryBig className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
             </div>
             Global Library
           </h1>
