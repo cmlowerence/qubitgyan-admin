@@ -1,27 +1,20 @@
- import React from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
 
 interface LogoProps {
   className?: string;
-  variant?: 'light' | 'dark';
 }
 
-export function Logo({ className, variant = 'light' }: LogoProps) {
-  // Theme Constants
-  const isDark = variant === 'dark';
-  
-  // Colors
+export function Logo({ className }: LogoProps) {
+  // Static Colors (Optimized for both light and dark backgrounds)
   const c = {
-    gold: "#F59E0B",
-    goldLight: "#FCD34D",
-    slate900: "#0F172A",
-    slate800: "#1E293B",
-    white: "#FFFFFF",
-    accent: "#6366F1" // Indigo reference for the "Quantum" feel
+    gold: "#F59E0B",      // Amber/Gold
+    goldLight: "#FCD34D", // Highlight Gold
+    slate900: "#0F172A",  // Deep Navy/Slate (Visible on light)
+    slate50: "#F8FAFC",   // Off-white (Reference)
+    textPrimary: "#1E293B", // Deep Slate for "QUBIT"
+    accent: "#6366F1"     // Indigo
   };
-
-  const primaryFill = isDark ? "url(#gradLight)" : "url(#gradDark)";
-  const subtextFill = "url(#gradGold)";
 
   return (
     <div className={cn("select-none", className)}>
@@ -34,35 +27,27 @@ export function Logo({ className, variant = 'light' }: LogoProps) {
         className="block"
       >
         <defs>
-          {/* Gradient: Gold (Wisdom) */}
-          <linearGradient id="gradGold" x1="0%" y1="0%" x2="100%" y2="0%">
+          {/* Static Gold Gradient */}
+          <linearGradient id="staticGold" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor={c.gold} />
             <stop offset="50%" stopColor={c.goldLight} />
             <stop offset="100%" stopColor={c.gold} />
           </linearGradient>
 
-          {/* Gradient: Dark (Structure) */}
-          <linearGradient id="gradDark" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={c.slate800} />
-            <stop offset="100%" stopColor={c.slate900} />
+          {/* Static Text Gradient (Darker to ensure visibility) */}
+          <linearGradient id="staticText" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#1E293B" />
+            <stop offset="100%" stopColor="#0F172A" />
           </linearGradient>
 
-          {/* Gradient: Light (Structure for Dark Mode) */}
-          <linearGradient id="gradLight" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={c.white} />
-            <stop offset="100%" stopColor="#E2E8F0" />
-          </linearGradient>
-
-          {/* Glow Effect for the Core */}
           <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feGaussianBlur stdDeviation="1.5" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
         </defs>
 
         {/* --- LEFT: THE QUBIT ICON --- */}
         <g transform="translate(4, 4)">
-          {/* Outer Orbital Ring */}
           <path 
             d="M20 2 A18 18 0 1 1 6.5 32.5" 
             stroke={c.gold} 
@@ -70,37 +55,32 @@ export function Logo({ className, variant = 'light' }: LogoProps) {
             strokeLinecap="round"
             fill="none"
           />
-          {/* Inner Quantum Circuit Line */}
           <path 
             d="M20 12 V28 M20 28 L28 36" 
-            stroke={isDark ? c.white : c.slate900} 
+            stroke={c.textPrimary} 
             strokeWidth="3" 
             strokeLinecap="round" 
             strokeLinejoin="round"
           />
-          {/* The "Bit" Dot */}
           <circle cx="20" cy="20" r="4" fill={c.gold} filter="url(#glow)" />
-          
-          {/* Decorative Orbital Dot */}
-          <circle cx="6.5" cy="32.5" r="2" fill={isDark ? c.white : c.slate900} />
+          <circle cx="6.5" cy="32.5" r="2" fill={c.textPrimary} />
         </g>
 
-        {/* --- RIGHT: TYPOGRAPHY --- */}
-        {/* Custom Constructed Geometric Text for "QUBIT" */}
+        {/* --- RIGHT: TYPOGRAPHY (QUBIT) --- */}
         <g transform="translate(50, 14)">
           {/* Q */}
           <path 
             d="M8 0 H4 A4 4 0 0 0 0 4 V10 A4 4 0 0 0 4 14 H8 A4 4 0 0 0 12 10 V4 A4 4 0 0 0 8 0 Z M9 11 L13 15" 
-            stroke={primaryFill} 
+            stroke={c.textPrimary} 
             strokeWidth="2.5" 
             fill="none" 
-            strokeLinecap="square"
+            strokeLinecap="round"
           />
           
           {/* U */}
           <path 
             d="M17 0 V10 A4 4 0 0 0 21 14 H24 A4 4 0 0 0 28 10 V0" 
-            stroke={primaryFill} 
+            stroke={c.textPrimary} 
             strokeWidth="2.5" 
             fill="none"
           />
@@ -108,49 +88,47 @@ export function Logo({ className, variant = 'light' }: LogoProps) {
           {/* B */}
           <path 
             d="M33 0 V14 M33 0 H38 A3.5 3.5 0 0 1 38 7 H33 M33 14 H39 A3.5 3.5 0 0 0 39 7 H33" 
-            stroke={primaryFill} 
+            stroke={c.textPrimary} 
             strokeWidth="2.5" 
             fill="none"
           />
 
-          {/* I */}
+          {/* I - Increased stroke width slightly for better visibility */}
           <path 
             d="M48 0 V14" 
-            stroke={primaryFill} 
-            strokeWidth="2.5" 
-            strokeLinecap="square"
+            stroke={c.textPrimary} 
+            strokeWidth="3" 
+            strokeLinecap="round"
           />
 
           {/* T */}
           <path 
             d="M54 0 H64 M59 0 V14" 
-            stroke={primaryFill} 
+            stroke={c.textPrimary} 
             strokeWidth="2.5" 
-            strokeLinecap="square"
+            strokeLinecap="round"
           />
         </g>
 
-        {/* --- SUBTEXT: GYAN (Knowledge) --- */}
-        {/* Using SVG Text for script complexity, but styled heavily */}
+        {/* --- SUBTEXT: GYAN --- */}
         <text
           x="50"
           y="36"
           fontFamily="serif"
           fontWeight="bold"
-          fontSize="10"
+          fontSize="11"
           letterSpacing="0.2em"
-          fill={subtextFill}
+          fill="url(#staticGold)"
           style={{ textTransform: 'uppercase' }}
         >
           ज्ञान
         </text>
         
-        {/* Decorative Line under text */}
         <path 
-          d="M85 33 H105" 
+          d="M85 33 H110" 
           stroke={c.gold} 
-          strokeWidth="1" 
-          strokeOpacity="0.5"
+          strokeWidth="1.5" 
+          strokeOpacity="0.6"
         />
       </svg>
     </div>
