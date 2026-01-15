@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Search, Trash2, Shield, GraduationCap, 
-  UserPlus, Lock, UserCheck, Ban, Info, Pencil
+  UserPlus, Lock, UserCheck, Ban, Info, Pencil, User as UserIcon
 } from 'lucide-react';
 import { 
   User, getUsers, createUser, deleteUser, toggleSuspendUser, updateUser, 
@@ -15,12 +15,12 @@ import { EditUserModal } from '@/components/users/EditUserModal';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
 
 export default function UsersPage() {
-  // ... (State logic remains exactly the same as before)
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
+  // Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -30,7 +30,7 @@ export default function UsersPage() {
     open: false, title: '', msg: '', type: 'success'
   });
 
-  // ... (Effects and Handlers remain exactly the same)
+  // 1. Fetch Data
   useEffect(() => {
     const init = async () => {
       try {
@@ -55,6 +55,7 @@ export default function UsersPage() {
     setUsers(data);
   };
 
+  // 2. Handlers
   const handleCreate = async (data: CreateUserPayload) => {
     setIsProcessing(true);
     try {
@@ -105,13 +106,18 @@ export default function UsersPage() {
     if (!suspendId) return;
     const userToToggle = users.find(u => u.id === suspendId);
     if (!userToToggle) return;
+
     const newState = !userToToggle.is_suspended;
     setIsProcessing(true);
     try {
       await toggleSuspendUser(suspendId, newState);
       setSuspendId(null);
       await fetchUsers();
-      showAlert(newState ? 'Suspended' : 'Activated', `User access has been ${newState ? 'blocked' : 'restored'}.`, 'success');
+      showAlert(
+        newState ? 'Suspended' : 'Activated', 
+        `User access has been ${newState ? 'blocked' : 'restored'}.`, 
+        'success'
+      );
     } catch (err: any) {
       showAlert('Error', 'Failed to update status.', 'danger');
     } finally {
@@ -129,25 +135,50 @@ export default function UsersPage() {
     (u.first_name + ' ' + u.last_name).toLowerCase().includes(search.toLowerCase())
   );
 
-  const canManageUser = (targetUser: User) => {
-    if (!currentUser) return false;
-    if (currentUser.is_superuser) return true;
-    return !targetUser.is_staff;
-  };
-
-  // Shared Action Buttons
+  // =========================================================
+  //  UPDATED PERMISSION LOGIC COMPONENT
+  // =========================================================
   const ActionButtons = ({ user, size = 'normal' }: { user: User, size?: 'small' | 'normal' }) => {
     const btnClass = size === 'small' ? 'p-1.5' : 'p-2';
     const iconClass = size === 'small' ? 'w-3.5 h-3.5' : 'w-4 h-4';
+    
+    // Logic 1: Is this ME?
+    const isSelf = currentUser?.id === user.id;
 
-    if (!canManageUser(user)) {
+    // Logic 2: Do I have rank over them?
+    // Superuser -> True for everyone
+    // Admin -> True ONLY if target is NOT staff (Student)
+    const hasRankAuthority = currentUser?.is_superuser || !user.is_staff;
+
+    // SCENARIO 1: IT IS ME
+    // I can only edit myself. I cannot delete or suspend myself.
+    if (isSelf) {
       return (
-        <div className="inline-flex items-center gap-1.5 p-1.5 text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg text-[10px] font-medium uppercase tracking-wide border border-slate-100 dark:border-slate-700">
+        <div className="flex items-center justify-end gap-1.5">
+           <span className="text-[10px] text-slate-400 font-medium mr-1 hidden sm:inline-block">
+             (You)
+           </span>
+           <button 
+            onClick={() => setEditUser(user)}
+            className={`${btnClass} text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300 rounded-lg transition-colors`}
+            title="Edit Profile"
+          >
+            <Pencil className={iconClass} />
+          </button>
+        </div>
+      );
+    }
+
+    // SCENARIO 2: NO AUTHORITY (e.g. Admin looking at another Admin)
+    if (!hasRankAuthority) {
+      return (
+        <div className="inline-flex items-center gap-1.5 p-1.5 text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg text-[10px] font-medium uppercase tracking-wide border border-slate-100 dark:border-slate-700 select-none cursor-not-allowed">
           <Lock className={iconClass} /> Protected
         </div>
       );
     }
     
+    // SCENARIO 3: FULL AUTHORITY (Superuser OR Admin looking at Student)
     return (
       <div className="flex items-center justify-end gap-1.5">
         <button 
@@ -157,6 +188,7 @@ export default function UsersPage() {
               ? "text-emerald-600 bg-emerald-50 border-emerald-100 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800" 
               : "text-amber-500 bg-amber-50 border-amber-100 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800"
           }`}
+          title={user.is_suspended ? "Unsuspend" : "Suspend"}
         >
           {user.is_suspended ? <UserCheck className={iconClass} /> : <Ban className={iconClass} />}
         </button>
@@ -164,6 +196,7 @@ export default function UsersPage() {
         <button 
           onClick={() => setEditUser(user)}
           className={`${btnClass} text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300 rounded-lg transition-colors`}
+          title="Edit"
         >
           <Pencil className={iconClass} />
         </button>
@@ -171,6 +204,7 @@ export default function UsersPage() {
         <button 
           onClick={() => setDeleteId(user.id)}
           className={`${btnClass} text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 rounded-lg transition-colors`}
+          title="Delete"
         >
           <Trash2 className={iconClass} />
         </button>
@@ -181,7 +215,7 @@ export default function UsersPage() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto pb-24 space-y-5 animate-in fade-in duration-500">
       
-      {/* 1. COMPACT RESPONSIVE HEADER */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
           <h1 className="text-lg md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2 md:gap-3">
@@ -195,6 +229,7 @@ export default function UsersPage() {
           </p>
         </div>
         
+        {/* Only show Add User if I have some authority */}
         <button 
           onClick={() => setIsCreateOpen(true)}
           className="w-full md:w-auto px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:opacity-90 shadow-lg shadow-slate-200 dark:shadow-none transition-all flex items-center justify-center gap-2 text-sm active:scale-95"
@@ -204,7 +239,7 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {/* 2. RESPONSIVE SEARCH BAR */}
+      {/* Search */}
       <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
         <div className="relative w-full sm:flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -217,7 +252,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* 3. MOBILE CARDS (Visible < md) - Redesigned to fix "breaking out" */}
+      {/* MOBILE VIEW (< md) */}
       <div className="grid grid-cols-1 gap-3 md:hidden">
         {loading ? (
            [1,2,3].map(i => (
@@ -229,11 +264,12 @@ export default function UsersPage() {
           </div>
         ) : (
           filteredUsers.map(user => (
-            <div key={user.id} className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3">
+            <div key={user.id} className={`bg-white dark:bg-slate-900 p-3.5 rounded-xl border shadow-sm flex flex-col gap-3 ${
+                currentUser?.id === user.id ? 'border-indigo-200 dark:border-indigo-900 ring-1 ring-indigo-50 dark:ring-indigo-900/20' : 'border-slate-200 dark:border-slate-800'
+              }`}>
               
               {/* Top: Identity */}
               <div className="flex items-start gap-3">
-                 {/* Avatar */}
                  <div className="flex-shrink-0">
                     {user.avatar_url ? (
                         <img src={user.avatar_url} alt="Av" className="w-10 h-10 rounded-full object-cover border border-slate-100 dark:border-slate-700" />
@@ -246,16 +282,15 @@ export default function UsersPage() {
                     )}
                  </div>
 
-                 {/* Name Info (with Truncation logic) */}
                  <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                        <h3 className="font-bold text-slate-900 dark:text-white text-base truncate pr-2">
                          {user.first_name} {user.last_name}
+                         {currentUser?.id === user.id && <span className="ml-2 text-indigo-500 text-[10px] uppercase tracking-wider">(You)</span>}
                        </h3>
                     </div>
                     <p className="text-xs text-slate-500 font-mono truncate">@{user.username}</p>
                     
-                    {/* Badges inline to save vertical space */}
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {user.is_staff ? (
                         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${
@@ -279,29 +314,22 @@ export default function UsersPage() {
                  </div>
               </div>
 
-              {/* Footer: Smart Wrapping Layout */}
-              {/* Flex-wrap ensures buttons drop to new line if name is too long */}
+              {/* Footer */}
               <div className="pt-2 mt-1 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-y-2 gap-x-2">
-                 
-                 {/* Created By Info */}
                  <div className="flex items-center gap-1 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-full max-w-full">
                    <Info className="w-3 h-3 flex-shrink-0" />
                    <span className="truncate">By @{user.created_by || 'system'}</span>
                  </div>
-
-                 {/* Actions - Pushed to right, but wraps if needed */}
                  <div className="ml-auto">
                     <ActionButtons user={user} size="small" />
                  </div>
               </div>
-
             </div>
           ))
         )}
       </div>
 
-
-      {/* 4. DESKTOP TABLE (Visible >= md) - Standard Table View */}
+      {/* DESKTOP TABLE (>= md) */}
       <div className="hidden md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm min-h-[400px]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -327,7 +355,9 @@ export default function UsersPage() {
                 <tr><td colSpan={4} className="p-12 text-center text-slate-400">No users found.</td></tr>
               ) : (
                 filteredUsers.map((user) => (
-                  <tr key={user.id} className={`group transition-colors ${user.is_suspended ? 'bg-red-50/50 dark:bg-red-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                  <tr key={user.id} className={`group transition-colors ${
+                      user.is_suspended ? 'bg-red-50/50 dark:bg-red-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                    } ${currentUser?.id === user.id ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : ''}`}>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {user.avatar_url ? (
@@ -340,8 +370,9 @@ export default function UsersPage() {
                           </div>
                         )}
                         <div>
-                          <div className="font-bold text-slate-800 dark:text-slate-200">
+                          <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                             {user.first_name} {user.last_name}
+                            {currentUser?.id === user.id && <span className="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-black uppercase tracking-wider">(You)</span>}
                           </div>
                           <div className="text-xs text-slate-400 font-mono">@{user.username}</div>
                         </div>
@@ -362,6 +393,7 @@ export default function UsersPage() {
                             <GraduationCap className="w-3 h-3" /> Student
                           </span>
                         )}
+
                         {user.is_suspended && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded border border-red-200">
                             <Ban className="w-3 h-3" /> Suspended
@@ -390,7 +422,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Modals & Dialogs (Unchanged) */}
+      {/* Modals & Dialogs */}
       <CreateUserModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSubmit={handleCreate} isLoading={isProcessing} currentUser={currentUser} />
       <EditUserModal isOpen={!!editUser} onClose={() => setEditUser(null)} onSubmit={handleUpdate} isLoading={isProcessing} user={editUser} />
       <ConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} title="Delete User?" message="Permanent action." confirmText="Delete" type="danger" isLoading={isProcessing} />
