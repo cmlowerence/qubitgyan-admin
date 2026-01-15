@@ -5,110 +5,129 @@ import { cn } from '@/lib/utils';
 
 interface LogoProps {
   className?: string;
-  variant?: 'light' | 'dark'; // Variant is kept for interface compatibility but ignored for this specific design
+  variant?: 'light' | 'dark'; // Kept for prop compatibility, but ignored for static colors
 }
 
 export function Logo({ className }: LogoProps) {
-  // Static Color Palette
-  const c = {
-    text: '#0F172A', // Dark navy blue for text
-    goldStart: '#FBBF24', // Brighter gold
-    goldEnd: '#B45309',   // Darker gold for gradient
-    goldStroke: '#D97706', // Stroke color for definition
+  // --- STATIC BRAND COLORS ---
+  const colors = {
+    navy: '#0F172A',         // High-contrast Navy for text
+    goldLight: '#FCD34D',    // Bright Gold
+    goldMid: '#F59E0B',      // Standard Gold
+    goldDeep: '#B45309',     // Rich Bronze/Gold
+    glowColor: '#FFFFFF',    // White halo for visibility on dark backgrounds
   };
 
   return (
-    <div className={cn("select-none relative z-10 inline-flex items-center", className)}>
+    <div className={cn("select-none relative z-10 p-1", className)}>
       <svg
-        width="200" // Adjusted width for icon + text
-        height="60" // Adjusted height
-        viewBox="0 0 200 60"
+        width="220"
+        height="60"
+        viewBox="0 0 220 60"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="block overflow-visible"
       >
         <defs>
-          {/* Golden Gradient for the shield icon */}
-          <linearGradient id="goldGradIcon" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={c.goldStart} />
-            <stop offset="30%" stopColor={c.goldStart} />
-            <stop offset="100%" stopColor={c.goldEnd} />
+          {/* 1. Liquid Gold Gradient for the Shield */}
+          <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={colors.goldLight} />
+            <stop offset="50%" stopColor={colors.goldMid} />
+            <stop offset="100%" stopColor={colors.goldDeep} />
           </linearGradient>
-          
-          {/* Inner glow for the shield */}
-          <filter id="innerGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur" />
-            <feOffset in="blur" dx="0" dy="0" result="offsetBlur" />
-            <feFlood floodColor={c.goldStart} floodOpacity="0.8" result="flood" />
-            <feComposite in="flood" in2="offsetBlur" operator="in" result="composite" />
-            <feMerge>
-              <feMergeNode in="SourceGraphic" />
-              <feMergeNode in="composite" />
-            </feMerge>
+
+          {/* 2. Universal Visibility Filter (The Glow) */}
+          {/* This creates a subtle white halo around the logo so it pops on dark sidebars */}
+          <filter id="universalVisibility" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0" stdDeviation="1.2" floodColor={colors.glowColor} floodOpacity="0.7"/>
+            <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#000000" floodOpacity="0.1"/>
+          </filter>
+
+          {/* 3. Gold Bevel Effect for the Shield */}
+          <filter id="bevel">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="0.5" result="blur" />
+            <feSpecularLighting in="blur" surfaceScale="5" specularConstant="0.8" specularExponent="20" lightingColor="#FFFFFF" result="specOut">
+              <fePointLight x="-5000" y="-10000" z="20000" />
+            </feSpecularLighting>
+            <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut" />
+            <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litPaint" />
           </filter>
         </defs>
 
-        {/* --- ICON: The Golden Shield --- */}
-        <g transform="translate(5, 5) scale(0.9)">
-          {/* Main Shield Body */}
-          <path
-            d="M25 1 L45 8 C45 8 48 35 25 48 C 2 35 5 8 5 8 L25 1 Z"
-            fill="url(#goldGradIcon)"
-            stroke={c.goldStroke}
-            strokeWidth="1.5"
-            filter="url(#innerGlow)"
-          />
+        {/* Apply the universal glow to the entire group */}
+        <g filter="url(#universalVisibility)">
           
-          {/* Inner Border & Circuitry */}
-          <g fill="none" stroke={c.goldStroke} strokeWidth="1">
-            {/* Inner Shield outline */}
-            <path d="M25 5 L41 11 C41 11 43 32 25 43 C 7 32 9 11 9 11 L25 5 Z" />
+          {/* --- ICON: THE GOLDEN SHIELD --- */}
+          <g transform="translate(5, 5)">
+            {/* Outer Shield Border */}
+            <path
+              d="M25 2 L46 9 C46 9 49 38 25 53 C 1 38 4 9 4 9 L25 2 Z"
+              fill="url(#shieldGradient)"
+              stroke={colors.goldDeep}
+              strokeWidth="1"
+              filter="url(#bevel)"
+            />
             
-            {/* Brain/Cloud Icon */}
-            <path d="M25 13 C23 13 22 14 21 15 C19 14 17 15 17 17 C17 19 19 20 21 19 C22 20 23 19 25 19 C27 19 28 20 29 19 C31 20 33 19 33 17 C33 15 31 14 29 15 C28 14 27 13 25 13 Z" fill="url(#goldGradIcon)" stroke="none" />
-            
-            {/* Globe */}
-            <circle cx="25" cy="28" r="7" />
-            <ellipse cx="25" cy="28" rx="7" ry="3" />
-            <line x1="25" y1="21" x2="25" y2="35" />
-            <line x1="18" y1="28" x2="32" y2="28" />
-            
-            {/* Circuit Lines and Nodes */}
-            <circle cx="14" cy="20" r="1.5" fill="url(#goldGradIcon)" stroke="none" />
-            <circle cx="36" cy="20" r="1.5" fill="url(#goldGradIcon)" stroke="none" />
-            <circle cx="16" cy="36" r="1.5" fill="url(#goldGradIcon)" stroke="none" />
-            <circle cx="34" cy="36" r="1.5" fill="url(#goldGradIcon)" stroke="none" />
-            <line x1="21" y1="17" x2="14" y2="20" />
-            <line x1="29" y1="17" x2="36" y2="20" />
-            <path d="M14 20 L14 28 L18 28" />
-            <path d="M36 20 L36 28 L32 28" />
-            <path d="M25 35 L25 38" />
-            <line x1="16" y1="36" x2="22" y2="33" />
-            <line x1="34" y1="36" x2="28" y2="33" />
-          </g>
-        </g>
+            {/* Inner Shield Detail */}
+            <path
+              d="M25 6 L41 12 C41 12 43 34 25 47 C 7 34 9 12 9 12 L25 6 Z"
+              fill="none"
+              stroke={colors.goldLight}
+              strokeWidth="0.8"
+              strokeOpacity="0.6"
+            />
 
-        {/* --- TEXT: "Qubit ज्ञान" --- */}
-        <g transform="translate(60, 40)">
-          <text
-            fontFamily="sans-serif"
-            fontWeight="bold"
-            fontSize="34"
-            fill={c.text}
-            style={{ letterSpacing: '0.02em' }}
-          >
-            Qubit
-          </text>
-          <text
-            x="95" // Position for the Hindi text
-            fontFamily="sans-serif"
-            fontWeight="bold"
-            fontSize="34"
-            fill={c.text}
-            style={{ letterSpacing: '0.02em' }}
-          >
-            ज्ञान
-          </text>
+            {/* Brain/Intellect Icon (Top) */}
+            <path 
+              d="M25 12 C23.5 12 22.5 13 22 14 C20.5 13.5 19 14 19 15.5 C19 17 20.5 18 22 17.5 C22.5 18.5 23.5 19 25 19 C26.5 19 27.5 18.5 28 17.5 C29.5 18 31 17 31 15.5 C31 14 29.5 13.5 28 14 C27.5 13 26.5 12 25 12 Z" 
+              fill={colors.goldDeep} 
+              opacity="0.9"
+            />
+
+            {/* Central Globe */}
+            <circle cx="25" cy="29" r="7.5" stroke={colors.goldDeep} strokeWidth="1" fill="none" />
+            <ellipse cx="25" cy="29" rx="7.5" ry="2.5" stroke={colors.goldDeep} strokeWidth="0.8" />
+            <ellipse cx="25" cy="29" rx="2.5" ry="7.5" stroke={colors.goldDeep} strokeWidth="0.8" />
+
+            {/* Circuit Line Connections */}
+            <g stroke={colors.goldDeep} strokeWidth="1" strokeLinecap="round">
+              <path d="M14 18 L18 22 M36 18 L32 22" />
+              <path d="M14 40 L19 35 M36 40 L31 35" />
+              {/* Nodes */}
+              <circle cx="14" cy="18" r="1.5" fill={colors.goldDeep} stroke="none" />
+              <circle cx="36" cy="18" r="1.5" fill={colors.goldDeep} stroke="none" />
+              <circle cx="14" cy="40" r="1.5" fill={colors.goldDeep} stroke="none" />
+              <circle cx="36" cy="40" r="1.5" fill={colors.goldDeep} stroke="none" />
+            </g>
+          </g>
+
+          {/* --- TEXT: QUBIT GYAN --- */}
+          <g transform="translate(62, 38)">
+            {/* Qubit Text */}
+            <text
+              fontFamily="sans-serif"
+              fontWeight="800"
+              fontSize="32"
+              fill={colors.navy}
+              style={{ letterSpacing: '-0.02em' }}
+            >
+              Qubit
+            </text>
+            
+            {/* ज्ञान Text (Hindi) */}
+            <text
+              x="92" 
+              fontFamily="sans-serif"
+              fontWeight="800"
+              fontSize="32"
+              fill={colors.navy}
+            >
+              ज्ञान
+            </text>
+
+            {/* Subtle Gold accent line under "Gyan" */}
+            <rect x="92" y="5" width="65" height="3" rx="1.5" fill="url(#shieldGradient)" opacity="0.8" />
+          </g>
         </g>
       </svg>
     </div>
