@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Loader2, FilePlus } from 'lucide-react';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'; // Drag Library
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Resource, ResourceType } from '@/types/resource';
 import { getResourcesByNode, createResource, deleteResource, updateResource, reorderResources } from '@/services/resource';
 import { ResourceCard } from './ResourceCard';
 import { api } from '@/lib/api'; 
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs'; 
-import { EditResourceModal } from './EditResourceModal'; // Ensure you created this file
+import { EditResourceModal } from './EditResourceModal';
 
 export function ResourceManager({ nodeId }: { nodeId: number }) {
   // Data State
@@ -44,7 +44,6 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
     try {
       setLoading(true);
       const data = await getResourcesByNode(nodeId);
-      // Ensure we sort by 'order' if backend doesn't
       const sorted = (Array.isArray(data) ? data : []).sort((a, b) => (a.order || 0) - (b.order || 0));
       setResources(sorted);
     } catch (err) {
@@ -70,23 +69,21 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
 
   // --- Drag & Drop Logic ---
   const onDragEnd = async (result: DropResult) => {
-    if (!result.destination) return; // Dropped outside
-    if (result.destination.index === result.source.index) return; // Dropped in same place
+    if (!result.destination) return; 
+    if (result.destination.index === result.source.index) return;
 
-    // 1. Optimistic UI Update (Instant swap)
     const newResources = Array.from(resources);
     const [movedItem] = newResources.splice(result.source.index, 1);
     newResources.splice(result.destination.index, 0, movedItem);
     
-    setResources(newResources); // Update UI immediately
+    setResources(newResources);
 
-    // 2. Send new order to backend
     try {
       const ids = newResources.map(r => r.id);
       await reorderResources(ids);
     } catch (err) {
       showAlert('Reorder Failed', 'Could not save new order.', 'danger');
-      fetchResources(); // Revert on error
+      fetchResources();
     }
   };
 
@@ -123,8 +120,8 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
     setIsSavingEdit(true);
     try {
       await updateResource(id, data);
-      setEditingResource(null); // Close modal
-      await fetchResources(); // Refresh list
+      setEditingResource(null);
+      await fetchResources(); 
       showAlert('Success', 'Resource updated!', 'success');
     } catch (err: any) {
       showAlert('Update Failed', err.message, 'danger');
@@ -152,35 +149,65 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       {/* Upload Form */}
-      <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-6 space-y-4 shadow-sm">
+      <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-6 space-y-4 shadow-sm w-full">
         <h3 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2">
           <FilePlus className="w-4 h-4" /> New Resource
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Responsive Grid: 1 column on mobile, 2 on medium screens */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          
+          {/* Title Input */}
           <input 
             placeholder="Resource Title"
-            className="p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm"
+            className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm"
             value={title}
             onChange={e => setTitle(e.target.value)}
             required
           />
-          <div className="flex gap-2">
-            <select className="flex-1 p-2.5 border rounded-lg text-sm bg-white shadow-sm" value={type} onChange={e => setType(e.target.value as ResourceType)}>
+
+          {/* Select Inputs Container: Stack vertically on mobile, row on small screens+ */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <select 
+              className="w-full sm:flex-1 p-2.5 border rounded-lg text-sm bg-white shadow-sm" 
+              value={type} 
+              onChange={e => setType(e.target.value as ResourceType)}
+            >
               <option value="PDF">Drive PDF</option>
               <option value="VIDEO">Video Link</option>
               <option value="LINK">External Link</option>
             </select>
-            <select className="flex-1 p-2.5 border rounded-lg text-sm bg-white shadow-sm text-blue-600 font-bold" value={selectedContext} onChange={e => setSelectedContext(e.target.value)} required>
+            
+            <select 
+              className="w-full sm:flex-1 p-2.5 border rounded-lg text-sm bg-white shadow-sm text-blue-600 font-bold" 
+              value={selectedContext} 
+              onChange={e => setSelectedContext(e.target.value)} 
+              required
+            >
               <option value="">Select Context</option>
-              {Array.isArray(contexts) && contexts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {Array.isArray(contexts) && contexts.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </select>
           </div>
         </div>
-        <input placeholder={type === 'PDF' ? "Paste Google Drive Link" : "Paste URL"} className="w-full p-2.5 border rounded-lg text-sm outline-none shadow-sm" value={url} onChange={e => setUrl(e.target.value)} required />
-        <button disabled={adding || !selectedContext} className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50">
+
+        {/* URL Input */}
+        <input 
+          placeholder={type === 'PDF' ? "Paste Google Drive Link" : "Paste URL"} 
+          className="w-full p-2.5 border rounded-lg text-sm outline-none shadow-sm" 
+          value={url} 
+          onChange={e => setUrl(e.target.value)} 
+          required 
+        />
+        
+        {/* Submit Button */}
+        <button 
+          disabled={adding || !selectedContext} 
+          className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
+        >
           {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Add to Topic</>}
         </button>
       </form>
@@ -190,7 +217,9 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
         {loading ? (
           <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-slate-200" /></div>
         ) : resources.length === 0 ? (
-          <div className="text-center p-12 border-2 border-dashed rounded-2xl text-slate-300 text-sm font-medium">No materials uploaded yet.</div>
+          <div className="text-center p-8 md:p-12 border-2 border-dashed rounded-2xl text-slate-300 text-sm font-medium">
+            No materials uploaded yet.
+          </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="resources-list">
@@ -199,12 +228,16 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
                   {resources.map((res, index) => (
                     <Draggable key={res.id} draggableId={res.id.toString()} index={index}>
                       {(provided) => (
-                        <div ref={provided.innerRef} {...provided.draggableProps}>
+                        <div 
+                          ref={provided.innerRef} 
+                          {...provided.draggableProps}
+                          className="w-full max-w-full" // Ensure card doesn't overflow
+                        >
                           <ResourceCard 
                             resource={res} 
                             onDelete={(id) => setDeleteId(id)}
-                            onEdit={(r) => setEditingResource(r)} // Open Edit Modal
-                            dragHandleProps={provided.dragHandleProps} // Grip Handle
+                            onEdit={(r) => setEditingResource(r)} 
+                            dragHandleProps={provided.dragHandleProps} 
                           />
                         </div>
                       )}
@@ -219,9 +252,24 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
       </div>
 
       {/* --- MODALS --- */}
-      <AlertModal isOpen={alertState.open} onClose={() => setAlertState(prev => ({ ...prev, open: false }))} title={alertState.title} message={alertState.msg} type={alertState.type} />
+      <AlertModal 
+        isOpen={alertState.open} 
+        onClose={() => setAlertState(prev => ({ ...prev, open: false }))} 
+        title={alertState.title} 
+        message={alertState.msg} 
+        type={alertState.type} 
+      />
       
-      <ConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={confirmDelete} title="Delete Resource?" message="Are you sure? This cannot be undone." confirmText="Delete" type="danger" isLoading={isDeleting} />
+      <ConfirmModal 
+        isOpen={!!deleteId} 
+        onClose={() => setDeleteId(null)} 
+        onConfirm={confirmDelete} 
+        title="Delete Resource?" 
+        message="Are you sure? This cannot be undone." 
+        confirmText="Delete" 
+        type="danger" 
+        isLoading={isDeleting} 
+      />
 
       <EditResourceModal 
         isOpen={!!editingResource} 
