@@ -17,29 +17,36 @@ export default function ProgressList({ records }: ProgressListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {records.map((record) => (
-        <div key={record.id} className="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all group">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs">
+        <div key={record.id} className="bg-white border border-slate-100 p-4 sm:p-5 rounded-2xl shadow-sm hover:shadow-md transition-all group">
+          <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+            
+            {/* Left side: Username - Added min-w-0 for truncation */}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs shrink-0">
                 {record.user_details.username[0].toUpperCase()}
               </div>
-              <span className="text-sm font-bold text-slate-700">{record.user_details.username}</span>
+              <span className="text-sm font-bold text-slate-700 truncate block">
+                {record.user_details.username}
+              </span>
             </div>
             
-            {record.is_completed ? (
-              <span className="flex items-center gap-1 text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
-                <CheckCircle2 className="w-3 h-3" /> COMPLETED
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-100">
-                <Clock className="w-3 h-3" /> IN PROGRESS
-              </span>
-            )}
+            {/* Right side: Badge - Added shrink-0 so it never squishes */}
+            <div className="shrink-0">
+              {record.is_completed ? (
+                <span className="flex items-center gap-1 text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+                  <CheckCircle2 className="w-3 h-3" /> <span className="hidden sm:inline">COMPLETED</span><span className="sm:hidden">DONE</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-100">
+                  <Clock className="w-3 h-3" /> <span className="hidden sm:inline">IN PROGRESS</span><span className="sm:hidden">PENDING</span>
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-start gap-2">
-              <BookOpen className="w-4 h-4 text-slate-300 mt-0.5" />
+              <BookOpen className="w-4 h-4 text-slate-300 mt-0.5 shrink-0" />
               <span className="text-sm font-medium text-slate-600 line-clamp-2 leading-snug">
                 {record.resource_details.title}
               </span>

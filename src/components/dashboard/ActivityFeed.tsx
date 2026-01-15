@@ -23,25 +23,30 @@ export function ActivityFeed({ activity }: { activity: any[] }) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-      <h3 className="font-bold text-slate-800 mb-6">Recent Activity</h3>
-      <div className="space-y-6">
+    // Responsive Padding: p-4 on mobile, p-6 on tablet+
+    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
+      <h3 className="font-bold text-slate-800 mb-4 sm:mb-6">Recent Activity</h3>
+      <div className="space-y-4 sm:space-y-6">
         {activity.length === 0 ? (
           <p className="text-slate-400 text-sm italic">No recent activity.</p>
         ) : (
           activity.map((item) => (
-            <div key={item.id} className="flex gap-4 items-start group">
-              <div className="mt-1 p-2 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition-colors">
+            <div key={item.id} className="flex gap-3 sm:gap-4 items-start group">
+              <div className="mt-1 p-2 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition-colors shrink-0">
                 {getIcon(item.resource_type)}
               </div>
+              
+              {/* min-w-0 is CRITICAL for truncate to work in flex children */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 truncate">{item.title}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-slate-500">
+                <p className="text-sm font-semibold text-slate-800 truncate pr-2">
+                  {item.title}
+                </p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                  <span className="text-xs text-slate-500 truncate max-w-[150px] sm:max-w-none">
                     Added to <span className="font-bold text-slate-700">{item.node_name || 'Root'}</span>
                   </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-[10px] flex items-center gap-1 text-slate-400">
+                  <span className="hidden sm:inline text-slate-300">•</span>
+                  <span className="text-[10px] flex items-center gap-1 text-slate-400 whitespace-nowrap">
                     <Clock className="w-3 h-3" /> {getTimeAgo(item.created_at)}
                   </span>
                 </div>

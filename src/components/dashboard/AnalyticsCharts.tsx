@@ -15,11 +15,12 @@ const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b'];
 
 export function AnalyticsCharts({ distribution, topSubjects }: AnalyticsProps) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       {/* 1. File Distribution (Pie Chart) */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-        <h3 className="font-bold text-slate-800 mb-6">Content Distribution</h3>
-        <div className="h-[300px] w-full">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
+        <h3 className="font-bold text-slate-800 mb-4 sm:mb-6">Content Distribution</h3>
+        {/* Slightly shorter on mobile to prevent excessive scrolling */}
+        <div className="h-[250px] sm:h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -27,7 +28,7 @@ export function AnalyticsCharts({ distribution, topSubjects }: AnalyticsProps) {
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
-                outerRadius={100}
+                outerRadius={80} // Reduced radius slightly for safer mobile fit
                 paddingAngle={5}
                 dataKey="count"
                 nameKey="resource_type"
@@ -37,25 +38,26 @@ export function AnalyticsCharts({ distribution, topSubjects }: AnalyticsProps) {
                 ))}
               </Pie>
               <Tooltip />
-              <Legend verticalAlign="bottom" height={36} />
+              <Legend verticalAlign="bottom" height={36} iconType="circle" />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* 2. Top Subjects (Bar Chart) */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-        <h3 className="font-bold text-slate-800 mb-6">Top Subjects by Content</h3>
-        <div className="h-[300px] w-full">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
+        <h3 className="font-bold text-slate-800 mb-4 sm:mb-6">Top Subjects by Content</h3>
+        <div className="h-[250px] sm:h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={topSubjects} layout="vertical" margin={{ left: 20 }}>
+            <BarChart data={topSubjects} layout="vertical" margin={{ left: 0, right: 10 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <XAxis type="number" hide />
+              {/* Reduced width of YAxis to give bars more room on mobile */}
               <YAxis 
                 dataKey="name" 
                 type="category" 
-                width={100} 
-                tick={{ fontSize: 12, fill: '#64748b' }} 
+                width={90} 
+                tick={{ fontSize: 11, fill: '#64748b' }} 
               />
               <Tooltip 
                 cursor={{ fill: '#f1f5f9' }}
