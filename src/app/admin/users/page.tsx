@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  User, getUsers, createUser, deleteUser, toggleSuspendUser, updateUser, 
+  User, getUsers, getCurrentUser, createUser, deleteUser, toggleSuspendUser, updateUser, 
   CreateUserPayload, UpdateUserPayload 
 } from '@/services/users';
-import { api } from '@/lib/api'; 
 import { CreateUserModal } from '@/components/users/CreateUserModal';
 import { EditUserModal } from '@/components/users/EditUserModal';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
@@ -37,12 +36,12 @@ export default function UsersPage() {
     const init = async () => {
       try {
         setLoading(true);
-        const [usersData, meRes] = await Promise.all([
+        const [usersData, meData] = await Promise.all([
           getUsers(),
-          api.get('/users/me/')
+          getCurrentUser()
         ]);
         setUsers(usersData);
-        setCurrentUser(meRes.data);
+        setCurrentUser(meData);
       } catch (err) {
         console.error("Failed to load data");
       } finally {
