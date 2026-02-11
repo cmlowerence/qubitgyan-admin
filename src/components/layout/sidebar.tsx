@@ -17,8 +17,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/brand/Logo';
 import { logoutAdmin } from '@/services/auth'; 
-import { api } from '@/lib/api';
 import { ConfirmModal } from '@/components/ui/dialogs'; // Imported Custom Modal
+import { User, getCurrentUser } from '@/services/users';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
@@ -31,15 +31,15 @@ const menuItems = [
 
 export function AdminSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false); // State for logout modal
 
   // Fetch Current User on Mount
   useEffect(() => {
     const fetchMe = async () => {
       try {
-        const { data } = await api.get('/users/me/');
-        setUser(data);
+        const me = await getCurrentUser();
+        setUser(me);
       } catch (error) {
         console.error("Failed to fetch user profile", error);
       }
