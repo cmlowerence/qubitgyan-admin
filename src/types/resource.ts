@@ -1,3 +1,4 @@
+// src/types/resource.ts
 export type ResourceType = 'VIDEO' | 'PDF' | 'LINK' | 'DOCUMENT';
 
 export interface ProgramContext {

@@ -1,3 +1,4 @@
+// src/app/admin/settings/_components/AccessibilitySection.tsx
 import { Zap, RefreshCcw } from 'lucide-react';
 
 interface AccessibilitySectionProps {

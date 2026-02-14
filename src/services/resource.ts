@@ -1,3 +1,4 @@
+// src/services/resource.ts
 import { api, handleApiError } from '@/lib/api';
 import { Resource, CreateResourcePayload } from '@/types/resource';
 

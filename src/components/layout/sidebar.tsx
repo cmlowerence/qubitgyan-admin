@@ -1,3 +1,4 @@
+// src/components/layout/sidebar.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -36,7 +37,7 @@ export function AdminSidebar({ className }: { className?: string }) {
     setIsLogoutOpen(false);
   };
 
-  // Build the navigation dynamically based on the fetched user
+  // Navigation menu structure for admin dashboard
   const navLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
     { icon: Network, label: 'Knowledge Tree', href: '/admin/tree' },

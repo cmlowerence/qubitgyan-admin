@@ -1,3 +1,4 @@
+// src/app/admin/settings/_components/DiagnosticsSection.tsx
 import { ShieldAlert } from 'lucide-react';
 
 interface DiagnosticsSectionProps {

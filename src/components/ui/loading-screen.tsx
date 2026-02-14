@@ -1,3 +1,4 @@
+// src/components/ui/loading-screen.tsx
 'use client';
 
 import React from 'react';
@@ -5,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Logo } from '@/components/brand/Logo';
 
 interface LoadingScreenProps {
-  message?: string; // Allow custom messages like "Logging in..."
+  message?: string;
 }
 
 export default function LoadingScreen({ message = "Initializing System..." }: LoadingScreenProps) {

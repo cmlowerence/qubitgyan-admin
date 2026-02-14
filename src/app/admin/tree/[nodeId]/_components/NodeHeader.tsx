@@ -1,3 +1,4 @@
+// src/app/admin/tree/[nodeId]/_components/NodeHeader.tsx
 import { 
   FolderTree, 
   ArrowLeft, 

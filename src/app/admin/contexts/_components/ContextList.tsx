@@ -1,3 +1,4 @@
+// src/app/admin/contexts/_components/ContextList.tsx
 import { Tag, Trash2, Loader2 } from 'lucide-react';
 
 interface ContextListProps {

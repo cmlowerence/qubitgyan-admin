@@ -1,7 +1,7 @@
-// src\app\admin\layout.tsx
+// src/app/admin/layout.tsx
 import { AdminSidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
-import AuthGuard from "@/components/auth/AuthGuard"; // Import it
+import AuthGuard from "@/components/auth/AuthGuard";
 
 export default function AdminLayout({
   children,
@@ -9,15 +9,14 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    // Wrap everything in AuthGuard
     <AuthGuard>
       <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-900">
-        {/* Sidebar for Desktop */}
+        {/* Desktop Sidebar */}
         <div className="hidden md:flex w-[280px] flex-col fixed inset-y-0 z-50">
           <AdminSidebar />
         </div>
 
-        {/* Main Content Area */}
+        {/* Main Content */}
         <main className="flex-1 md:pl-[280px] h-full flex flex-col relative">
           
           {/* Mobile Header */}
@@ -26,7 +25,7 @@ export default function AdminLayout({
             <MobileNav />
           </div>
 
-          {/* Scrollable Page Content */}
+          {/* Page Content */}
           <div className="flex-1 overflow-y-auto p-4 md:p-8 relative">
             {children}
           </div>

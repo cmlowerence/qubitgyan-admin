@@ -1,6 +1,6 @@
+// src/services/quizzes.ts
 import { api, handleApiError } from '@/lib/api';
 
-// --- Nested Types ---
 export interface QuizOption {
   id?: number; // Optional for creation
   text: string;

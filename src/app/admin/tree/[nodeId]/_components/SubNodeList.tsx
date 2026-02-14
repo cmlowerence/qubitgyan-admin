@@ -1,3 +1,4 @@
+// src/app/admin/tree/[nodeId]/_components/SubNodeList.tsx
 import { Pencil, Image as ImageIcon, FolderTree } from 'lucide-react';
 import { KnowledgeNode } from '@/types/tree';
 

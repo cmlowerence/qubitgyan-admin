@@ -1,3 +1,4 @@
+// src/app/admin/resources/_components/ResourceList.tsx
 import { Loader2, Search } from 'lucide-react';
 import { Resource } from '@/types/resource';
 import { ResourceCard } from '@/components/resources/ResourceCard';

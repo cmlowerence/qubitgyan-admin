@@ -1,7 +1,7 @@
+// src/services/tree.ts
 import { api, handleApiError } from '@/lib/api';
 import { KnowledgeNode, CreateNodePayload, UpdateNodePayload } from '@/types/tree';
 
-// 1. Fetch the entire tree
 export const getKnowledgeTree = async (): Promise<KnowledgeNode[]> => {
   try {
     const response = await api.get('/nodes/');

@@ -1,11 +1,12 @@
+// src/services/contexts.ts
 import { api, handleApiError } from '@/lib/api';
 
 export interface ProgramContext {
   id: number;
   name: string;
   description?: string;
-  created_at?: string; // Added for sorting/display in UI
-  resource_count?: number; // Optional: Backend often provides count of tagged items
+  created_at?: string;
+  resource_count?: number;
 }
 
 /**

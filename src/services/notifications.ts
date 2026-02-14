@@ -1,3 +1,4 @@
+// src/services/notifications.ts
 import { api, handleApiError } from '@/lib/api';
 
 export interface AppNotification {

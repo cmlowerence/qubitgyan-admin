@@ -1,3 +1,4 @@
+// src/components/dashboard/AnalyticsCharts.tsx
 'use client';
 
 import React from 'react';

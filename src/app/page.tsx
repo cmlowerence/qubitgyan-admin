@@ -1,3 +1,4 @@
+// src/app/page.tsx
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { ArrowRight } from "lucide-react";

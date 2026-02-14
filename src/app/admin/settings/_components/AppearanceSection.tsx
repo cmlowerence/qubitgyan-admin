@@ -1,3 +1,4 @@
+// src/app/admin/settings/_components/AppearanceSection.tsx
 import { Monitor, Sun, Moon, Smartphone, CheckCircle2 } from 'lucide-react';
 
 interface AppearanceSectionProps {

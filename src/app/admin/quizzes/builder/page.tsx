@@ -1,3 +1,4 @@
+// src/app/admin/quizzes/builder/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';

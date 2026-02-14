@@ -1,3 +1,4 @@
+// src/services/auth.ts
 import axios from 'axios';
 import { handleApiError } from '@/lib/api';
 
@@ -6,7 +7,7 @@ interface LoginResponse {
   refresh: string;
 }
 
-// Helper to get the base URL without the '/v1' part
+// Extract base domain from API URL
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'https://qubitgyan-api.onrender.com';
 
 export const loginAdmin = async (email: string, password: string) => {

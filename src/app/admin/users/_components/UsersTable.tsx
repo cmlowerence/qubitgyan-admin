@@ -1,3 +1,4 @@
+// src/app/admin/users/_components/UsersTable.tsx
 import { Shield, GraduationCap, Ban, Info } from 'lucide-react';
 import { User } from '@/services/users';
 import UserActions from './UserActions';

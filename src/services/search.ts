@@ -1,3 +1,4 @@
+// src/services/search.ts
 import { api, handleApiError } from '@/lib/api';
 
 export interface SearchResult {

@@ -1,3 +1,4 @@
+// src/services/rbac.ts
 import { api, handleApiError } from '@/lib/api';
 
 export interface AdminRBACProfile {

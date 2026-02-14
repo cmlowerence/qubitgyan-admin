@@ -1,3 +1,4 @@
+// src/components/resources/ResourceManager.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { Resource, ResourceType } from '@/types/resource';
 import { getResourcesByNode, createResource, deleteResource, updateResource, reorderResources } from '@/services/resource';
 import { ResourceCard } from './ResourceCard';
-import { api } from '@/lib/api'; 
+import { api } from '@/lib/api';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs'; 
 import { EditResourceModal } from './EditResourceModal';
 

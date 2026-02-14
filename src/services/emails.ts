@@ -1,3 +1,4 @@
+// src/services/emails.ts
 import { api, handleApiError } from '@/lib/api';
 
 export interface QueueStatus {

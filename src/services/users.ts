@@ -1,3 +1,4 @@
+// src/services/users.ts
 import { api, handleApiError } from '@/lib/api';
 
 export interface User {
@@ -6,8 +7,8 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
-  is_staff: boolean;      // True = Admin, False = Student
-  is_superuser?: boolean; // True = Super Admin
+  is_staff: boolean;
+  is_superuser?: boolean;
   
   // New Profile Fields
   created_by?: string;    // Username of the creator

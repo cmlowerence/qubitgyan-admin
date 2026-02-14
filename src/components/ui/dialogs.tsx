@@ -1,3 +1,4 @@
+// src/components/ui/dialogs.tsx
 'use client';
 
 import React, { useEffect } from 'react';

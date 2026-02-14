@@ -1,3 +1,4 @@
+// src/app/admin/settings/_components/SettingsHeader.tsx
 import { Settings } from 'lucide-react';
 
 export default function SettingsHeader() {

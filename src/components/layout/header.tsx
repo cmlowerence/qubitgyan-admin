@@ -1,8 +1,9 @@
+// src/components/layout/header.tsx
 'use client';
 
 import React from 'react';
 import { Bell, Search } from 'lucide-react';
-import { MobileNav } from './mobile-nav'; // <--- Import this
+import { MobileNav } from './mobile-nav';
 
 export function AdminHeader() {
   return (

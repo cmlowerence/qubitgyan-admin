@@ -1,5 +1,4 @@
-// src\app\admin\media\page.tsx
-
+// src/app/admin/media/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';

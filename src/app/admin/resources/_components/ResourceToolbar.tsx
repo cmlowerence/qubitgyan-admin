@@ -1,3 +1,4 @@
+// src/app/admin/resources/_components/ResourceToolbar.tsx
 import { Search, Filter, RefreshCw } from 'lucide-react';
 
 interface ResourceToolbarProps {

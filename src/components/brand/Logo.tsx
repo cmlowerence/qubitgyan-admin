@@ -1,3 +1,4 @@
+// src/components/brand/Logo.tsx
 import React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -6,7 +7,7 @@ interface LogoProps {
 }
 
 export function Logo({ className }: LogoProps) {
-  // Static high-contrast colors for Qubitgyan
+  // Brand color palette for Qubitgyan logo
   const c = {
     gold: "#F59E0B",
     goldLight: "#FCD34D",

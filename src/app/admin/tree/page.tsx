@@ -1,10 +1,10 @@
+// src/app/admin/tree/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; 
 import { FolderTree, AlertCircle, RefreshCw, Plus } from 'lucide-react';
 
-// Services & Types
 import { getKnowledgeTree, createKnowledgeNode } from '@/services/tree';
 import { KnowledgeNode, CreateNodePayload } from '@/types/tree';
 

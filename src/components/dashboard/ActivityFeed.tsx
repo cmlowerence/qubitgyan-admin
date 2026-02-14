@@ -1,3 +1,4 @@
+// src/components/dashboard/ActivityFeed.tsx
 import React from 'react';
 import { FileText, Video, Link as LinkIcon, Clock } from 'lucide-react';
 import { Resource } from '@/types/resource';

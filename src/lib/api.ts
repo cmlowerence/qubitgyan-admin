@@ -1,9 +1,8 @@
+// src/lib/api.ts
 import axios from 'axios';
 
-// 1. Sanitize the Base URL (Remove trailing slash if present)
-// const RAW_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qubitgyan-api.onrender.com/api/v1';
 const RAW_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-const API_URL = RAW_URL.replace(/\/+$/, ''); // Removes '/' at the end
+const API_URL = RAW_URL.replace(/\/+$/, ''); // Remove trailing slashes
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -12,11 +11,8 @@ export const api = axios.create({
   },
 });
 
-// 2. Request Interceptor: Attach Token & Log URL
+// Attach JWT token to all requests
 api.interceptors.request.use((config) => {
-  // Debug: Log the full URL to the console so we can catch 404s
-  // console.log(`🚀 Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
-  
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('access_token');
     if (token) {
@@ -26,7 +22,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// 3. Response Interceptor: Handle 401s
+// Redirect to login on 401 Unauthorized response
 api.interceptors.response.use(
   (response) => response,
   (error) => {

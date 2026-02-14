@@ -1,9 +1,10 @@
+// src/components/layout/GlobalSearch.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Loader2, FolderTree, FileText, User } from 'lucide-react';
-import { globalSearch, SearchResult } from '@/services/search'; // Using YOUR existing service!
+import { globalSearch, SearchResult } from '@/services/search';
 
 export function GlobalSearch() {
   const router = useRouter();

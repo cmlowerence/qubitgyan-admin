@@ -1,3 +1,4 @@
+// src/app/admin/resources/_components/LibraryHeader.tsx
 import { LibraryBig } from 'lucide-react';
 
 interface LibraryHeaderProps {

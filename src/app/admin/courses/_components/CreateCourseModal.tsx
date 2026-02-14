@@ -1,3 +1,4 @@
+// src/app/admin/courses/_components/CreateCourseModal.tsx
 'use client';
 
 import { useState, useEffect } from 'react';

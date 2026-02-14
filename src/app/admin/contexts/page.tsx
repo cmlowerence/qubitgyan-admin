@@ -1,7 +1,8 @@
+// src/app/admin/contexts/page.tsx  
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getContexts, createContext, deleteContext, ProgramContext } from '@/services/contexts'; 
+import { getContexts, createContext, deleteContext, ProgramContext } from '@/services/contexts';
 import ContextHeader from './_components/ContextHeader';
 import CreateContextForm from './_components/CreateContextForm';
 import ContextList from './_components/ContextList';

@@ -1,3 +1,4 @@
+// src/app/admin/tree/[nodeId]/_components/ErrorState.tsx
 import { AlertCircle } from 'lucide-react';
 
 interface ErrorStateProps {

@@ -1,3 +1,4 @@
+// src/services/dashboard.ts
 import { api, handleApiError } from '@/lib/api';
 import { Resource } from '@/types/resource';
 

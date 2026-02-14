@@ -1,3 +1,4 @@
+// src/services/admissions.ts
 import { api, handleApiError } from '@/lib/api';
 
 export type AdmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED';

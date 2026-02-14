@@ -1,3 +1,4 @@
+// src/app/admin/progress/_components/SearchInput.tsx
 import { Search } from 'lucide-react';
 
 interface SearchInputProps {

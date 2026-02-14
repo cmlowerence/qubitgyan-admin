@@ -1,3 +1,4 @@
+// src/services/student-activity.ts
 import { api, handleApiError } from '@/lib/api';
 
 export interface AdminProgressRecord {

@@ -1,4 +1,4 @@
-// src\services\media.ts
+// src/services/media.ts
 import { api, handleApiError } from '@/lib/api';
 
 export interface StorageStatus {

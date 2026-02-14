@@ -1,3 +1,4 @@
+// src/app/admin/progress/_components/ProgressList.tsx
 import { CheckCircle2, Clock, BookOpen } from 'lucide-react';
 import { ProgressRecord } from '@/services/progress';
 

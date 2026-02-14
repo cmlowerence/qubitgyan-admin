@@ -1,3 +1,4 @@
+// src/app/admin/users/_components/UserActions.tsx
 import { Pencil, Trash2, Ban, UserCheck, Lock } from 'lucide-react';
 import { User } from '@/services/users';
 

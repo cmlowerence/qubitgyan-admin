@@ -1,3 +1,4 @@
+// src/app/admin/progress/_components/DashboardHeader.tsx
 import { BarChart3 } from 'lucide-react';
 
 export default function DashboardHeader() {

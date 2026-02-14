@@ -1,10 +1,11 @@
+// src/app/login/_components/LoginForm.tsx
 import { Lock, Mail, AlertCircle, ShieldAlert } from 'lucide-react';
 
 interface LoginFormProps {
-  email: string; // Changed from username
+  email: string;
   password: string;
   error: string;
-  onEmailChange: (value: string) => void; // Changed from onUsernameChange
+  onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }

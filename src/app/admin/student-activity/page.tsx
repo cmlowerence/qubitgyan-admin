@@ -1,3 +1,4 @@
+// src/app/admin/student-activity/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
