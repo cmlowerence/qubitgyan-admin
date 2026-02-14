@@ -29,7 +29,7 @@ const PREBUILT_AVATARS = [
 
 export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentUser }: CreateUserModalProps) {
   const [formData, setFormData] = useState<CreateUserPayload>({
-    username: '', // Will be synced with email
+    username: '', 
     email: '',
     password: '',
     first_name: '',
@@ -69,8 +69,6 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
       setError("Passwords do not match!");
       return;
     }
-
-    // Final safety sync: Ensure username is exactly the email before submitting
     const finalData = {
       ...formData,
       username: formData.email 
@@ -167,7 +165,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
               value={formData.profile?.avatar_url || ''} 
               onChange={e => setFormData({ 
                 ...formData, 
-                profile: { ...formData.profile, avatar_url: e.target.value } 
+                profile: { ...formData.profile, avatar_url: e.target.value }
               })} 
             />
 

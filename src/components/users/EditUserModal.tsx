@@ -29,7 +29,7 @@ const PREBUILT_AVATARS = [
 
 export function EditUserModal({ isOpen, onClose, onSubmit, isLoading, user }: EditUserModalProps) {
   const [formData, setFormData] = useState<UpdateUserPayload>({
-    username: '', // Will stay synced with email
+    username: '', 
     email: '',
     first_name: '',
     last_name: '',

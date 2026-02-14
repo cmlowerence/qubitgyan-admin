@@ -15,7 +15,7 @@ export const api = axios.create({
 // 2. Request Interceptor: Attach Token & Log URL
 api.interceptors.request.use((config) => {
   // Debug: Log the full URL to the console so we can catch 404s
-  console.log(`🚀 Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+  // console.log(`🚀 Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
   
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('access_token');
