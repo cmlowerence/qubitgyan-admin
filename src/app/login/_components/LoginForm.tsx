@@ -1,19 +1,19 @@
-import { Lock, User, AlertCircle, ShieldAlert } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ShieldAlert } from 'lucide-react';
 
 interface LoginFormProps {
-  username: string;
+  email: string; // Changed from username
   password: string;
   error: string;
-  onUsernameChange: (value: string) => void;
+  onEmailChange: (value: string) => void; // Changed from onUsernameChange
   onPasswordChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
 export default function LoginForm({
-  username,
+  email,
   password,
   error,
-  onUsernameChange,
+  onEmailChange,
   onPasswordChange,
   onSubmit
 }: LoginFormProps) {
@@ -26,12 +26,10 @@ export default function LoginForm({
             <h1 className="text-2xl font-bold text-white mb-2">QubitGyan Admin</h1>
             <p className="text-blue-100 text-sm">Secure Gateway for Staff Only</p>
           </div>
-          
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
         </div>
 
         <form onSubmit={onSubmit} className="p-8 space-y-6">
-          
           {error && (
             <div className={`p-3 rounded-lg text-sm flex items-start gap-2 border ${
               error.includes("Restricted") 
@@ -49,12 +47,13 @@ export default function LoginForm({
 
           <div className="space-y-4">
             <div className="relative group">
-              <User className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              {/* Changed icon to Mail and input type to email */}
+              <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
               <input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => onUsernameChange(e.target.value)}
+                type="email" 
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => onEmailChange(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-gray-700"
                 required
               />

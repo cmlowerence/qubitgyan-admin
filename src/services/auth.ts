@@ -1,20 +1,19 @@
 import axios from 'axios';
-import { api, handleApiError } from '@/lib/api';
+import { handleApiError } from '@/lib/api';
 
 interface LoginResponse {
   access: string;
   refresh: string;
 }
 
-// Helper to get the base URL without the '/v1' part if needed
+// Helper to get the base URL without the '/v1' part
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'https://qubitgyan-api.onrender.com';
 
-export const loginAdmin = async (username: string, password: string) => {
+export const loginAdmin = async (email: string, password: string) => {
   try {
-    // FIX: Using a direct axios call to avoid the '/v1' prefix issue
-    // We try the standard SimpleJWT path: /api/token/
+    // Backend Map specifies inputting the email into the 'username' field
     const response = await axios.post<LoginResponse>(`${BASE_DOMAIN}/api/token/`, {
-      username,
+      username: email, 
       password,
     });
     
@@ -31,10 +30,8 @@ export const loginAdmin = async (username: string, password: string) => {
 };
 
 export const logoutAdmin = () => {
-  // 1. Remove Tokens
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
-  // 2. Force Redirect
   window.location.href = '/login';
 };
 

@@ -1,3 +1,4 @@
+// src\app\admin\layout.tsx
 import { AdminSidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import AuthGuard from "@/components/auth/AuthGuard"; // Import it

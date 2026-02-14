@@ -12,18 +12,24 @@ interface CreateUserModalProps {
   currentUser: User | null;
 }
 
-// Prebuilt Avatar Options (DiceBear API)
 const PREBUILT_AVATARS = [
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Mark",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie",
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=Luna"
+  "https://api.dicebear.com/9.x/micah/svg?seed=Jameson",
+  "https://api.dicebear.com/9.x/micah/svg?seed=Adrian",
+  "https://api.dicebear.com/9.x/toon-head/svg?seed=Jameson",
+  "https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Brian",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Luna",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Oscar",
+  "https://api.dicebear.com/9.x/toon-head/svg?seed=Kingston",
+  "https://api.dicebear.com/9.x/toon-head/svg?seed=Brian",
+  "https://api.dicebear.com/9.x/micah/svg?seed=Kingston",
+  "https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Jameson",
+  "https://api.dicebear.com/9.x/toon-head/svg?seed=Oliver",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie",
 ];
 
 export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentUser }: CreateUserModalProps) {
   const [formData, setFormData] = useState<CreateUserPayload>({
-    username: '',
+    username: '', // Will be synced with email
     email: '',
     password: '',
     first_name: '',
@@ -37,7 +43,6 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
   const [confirmPass, setConfirmPass] = useState('');
   const [error, setError] = useState('');
 
-  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setFormData({
@@ -65,7 +70,13 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
       return;
     }
 
-    onSubmit(formData);
+    // Final safety sync: Ensure username is exactly the email before submitting
+    const finalData = {
+      ...formData,
+      username: formData.email 
+    };
+
+    onSubmit(finalData);
   };
 
   const isSuperUser = currentUser?.is_superuser || false;
@@ -100,7 +111,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
               }`}
             >
               <GraduationCap className="w-6 h-6" />
-              <span className="text-xs font-bold">Student</span>
+              <span className="text-xs font-bold">Student Account</span>
             </button>
             
             {isSuperUser && (
@@ -114,7 +125,7 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
                 }`}
               >
                 <Shield className="w-6 h-6" />
-                <span className="text-xs font-bold">Admin</span>
+                <span className="text-xs font-bold">Staff / Admin</span>
               </button>
             )}
           </div>
@@ -130,23 +141,25 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
             </div>
           </div>
 
+          {/* Email serves as Username */}
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Username</label>
-            <input className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-blue-500" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} required />
+            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Email Address</label>
+            <input 
+              type="email" 
+              placeholder="user@example.com"
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-blue-500" 
+              value={formData.email} 
+              onChange={e => setFormData({ ...formData, email: e.target.value, username: e.target.value })} 
+              required 
+            />
+            <p className="text-[10px] text-slate-400 mt-1 italic">This email will be used for both login and identity.</p>
           </div>
 
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Email</label>
-            <input type="email" className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-blue-500" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
-          </div>
-
-          {/* === AVATAR SECTION === */}
           <div className="space-y-3">
             <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
               <ImageIcon className="w-3 h-3" /> Profile Picture
             </label>
             
-            {/* Custom URL Input */}
             <input 
               type="url"
               placeholder="Paste image URL here..."
@@ -158,7 +171,6 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
               })} 
             />
 
-            {/* Prebuilt Options */}
             <div>
               <p className="text-[10px] text-slate-400 mb-2 uppercase font-bold tracking-wider">Or choose a preset:</p>
               <div className="flex gap-2 overflow-x-auto pb-2">
@@ -211,7 +223,6 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />} Create User
             </button>
           </div>
-
         </form>
       </div>
     </div>

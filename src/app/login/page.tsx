@@ -9,7 +9,7 @@ import LoginForm from './_components/LoginForm';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      await loginAdmin(username, password);
+      await loginAdmin(email, password);
 
       const { data: user } = await api.get('/users/me/');
 
@@ -37,7 +37,8 @@ export default function LoginPage() {
 
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Invalid username or password');
+      // Changed fallback error message to reflect email
+      setError(err.message || 'Invalid email or password');
       setIsLoading(false);
     }
   };
@@ -48,10 +49,10 @@ export default function LoginPage() {
 
   return (
     <LoginForm 
-      username={username}
+      email={email}
       password={password}
       error={error}
-      onUsernameChange={setUsername}
+      onEmailChange={setEmail}
       onPasswordChange={setPassword}
       onSubmit={handleLogin}
     />

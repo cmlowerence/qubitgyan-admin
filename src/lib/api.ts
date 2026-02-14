@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 // 1. Sanitize the Base URL (Remove trailing slash if present)
-const RAW_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qubitgyan-api.onrender.com/api/v1';
+// const RAW_URL = process.env.NEXT_PUBLIC_API_URL || 'https://qubitgyan-api.onrender.com/api/v1';
+const RAW_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 const API_URL = RAW_URL.replace(/\/+$/, ''); // Removes '/' at the end
 
 export const api = axios.create({
