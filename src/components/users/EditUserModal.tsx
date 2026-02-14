@@ -62,7 +62,10 @@ export function EditUserModal({ isOpen, onClose, onSubmit, isLoading, user }: Ed
     // Final sync before submission
     const payload: UpdateUserPayload = { 
       ...formData,
-      username: formData.email 
+      username: formData.email,
+      profile: formData.profile?.avatar_url 
+        ? { avatar_url: formData.profile.avatar_url }
+        : undefined
     };
 
     if (newPassword) {

@@ -71,7 +71,10 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
     }
     const finalData = {
       ...formData,
-      username: formData.email 
+      username: formData.email,
+      profile: formData.profile?.avatar_url 
+        ? { avatar_url: formData.profile.avatar_url }
+        : undefined
     };
 
     onSubmit(finalData);
