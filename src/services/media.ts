@@ -31,8 +31,6 @@ export const getMediaList = async (): Promise<UploadedMedia[]> => {
   try {
     const response = await api.get('/manager/media/');
     const raw = Array.isArray(response.data) ? response.data : (response.data.results || []);
-
-    // Normalize backend fields to the frontend shape the UI expects.
     return raw.map((r: any) => ({
       id: r.id,
       file: r.public_url || r.file || '',
@@ -50,14 +48,14 @@ export const uploadMedia = async (file: File, filename?: string, category?: stri
   try {
     const formData = new FormData();
     formData.append('file', file);
-    // backend expects the field name `name` (not `filename`)
     formData.append('name', (filename || file.name));
     if (category) formData.append('category', category);
+    const response = await api.post('/manager/media/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
 
-    // Let axios set the multipart boundary for us (do not set Content-Type manually)
-    const response = await api.post('/manager/media/upload/', formData);
-
-    // Prefer full UploadedImage object from backend when available.
     const d = response.data || {};
 
     return {
