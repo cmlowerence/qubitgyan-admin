@@ -11,6 +11,7 @@ export default function RBACManagerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     loadRBACData();
@@ -24,7 +25,7 @@ export default function RBACManagerPage() {
       setAdmins(data);
     } catch (err: any) {
       // If a non-superuser tries to load this, the API throws a 403.
-      if (err.message.includes('403') || err.message.includes('Forbidden')) {
+      if (err.message?.includes('403') || err.message?.includes('Forbidden')) {
         setError('Access Denied. You must be a Super Admin to view and modify Role-Based Access Controls.');
       } else {
         setError(err.message || 'Failed to load RBAC data.');
@@ -34,9 +35,7 @@ export default function RBACManagerPage() {
     }
   };
 
-  const toast = useToast();
-
-  const handleTogglePermission = async (id: number, field: keyof typeof admins[0], currentValue: boolean) => {
+  const handleTogglePermission = async (id: number, field: keyof AdminRBACProfile, currentValue: boolean) => {
     try {
       setProcessingId(id);
       const res = await updateAdminRBAC(id, { [field]: !currentValue });
@@ -44,15 +43,17 @@ export default function RBACManagerPage() {
       // If backend returned the updated user object, use it to update local state
       if (res && res.user) {
         const u = res.user;
-        setAdmins(admins.map(admin =>
+        
+        setAdmins(prevAdmins => prevAdmins.map(admin =>
           admin.id === id
             ? {
                 ...admin,
                 // keep avatar key name consistent with AdminRBACProfile
                 avatar: u.avatar_url ?? admin.avatar,
-                can_manage_content: Boolean((u as any).can_manage_content),
-                can_approve_admissions: Boolean((u as any).can_approve_admissions),
-                can_manage_users: Boolean((u as any).can_manage_users),
+                // Enforce strict boolean conversion in case the backend returns 0/1 integers
+                can_manage_content: Boolean(u.can_manage_content),
+                can_approve_admissions: Boolean(u.can_approve_admissions),
+                can_manage_users: Boolean(u.can_manage_users),
                 is_superuser: Boolean(u.is_superuser),
               }
             : admin
@@ -68,8 +69,8 @@ export default function RBACManagerPage() {
 
         toast.push({ title: 'Permissions updated', description: 'Saved successfully', variant: 'success' });
       } else {
-        // Fallback: optimistic update
-        setAdmins(admins.map(admin => 
+        // Fallback: optimistic update if no user object is returned
+        setAdmins(prevAdmins => prevAdmins.map(admin => 
           admin.id === id ? { ...admin, [field]: !currentValue } : admin
         ));
 
@@ -77,7 +78,7 @@ export default function RBACManagerPage() {
       }
     } catch (err: any) {
       toast.push({ title: 'Update failed', description: err.message || 'Failed to update permission', variant: 'danger' });
-      loadRBACData(); // Revert on failure
+      loadRBACData(); // Revert on failure to ensure UI matches the true database state
     } finally {
       setProcessingId(null);
     }
@@ -142,9 +143,9 @@ export default function RBACManagerPage() {
                     <button
                       onClick={() => handleTogglePermission(admin.id, 'can_manage_content', admin.can_manage_content)}
                       disabled={admin.is_superuser || processingId === admin.id}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${admin.can_manage_content ? 'bg-blue-600' : 'bg-gray-200'} ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${admin.can_manage_content ? 'bg-blue-600' : 'bg-gray-200'} ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''} ${processingId === admin.id ? 'opacity-70 grayscale' : ''}`}
                     >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white ${admin.can_manage_content ? 'translate-x-6' : 'translate-x-1'}`} />
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${admin.can_manage_content ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                   </div>
 
@@ -153,9 +154,9 @@ export default function RBACManagerPage() {
                     <button
                       onClick={() => handleTogglePermission(admin.id, 'can_approve_admissions', admin.can_approve_admissions)}
                       disabled={admin.is_superuser || processingId === admin.id}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${admin.can_approve_admissions ? 'bg-green-600' : 'bg-gray-200'} ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${admin.can_approve_admissions ? 'bg-green-600' : 'bg-gray-200'} ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''} ${processingId === admin.id ? 'opacity-70 grayscale' : ''}`}
                     >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white ${admin.can_approve_admissions ? 'translate-x-6' : 'translate-x-1'}`} />
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${admin.can_approve_admissions ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                   </div>
 
@@ -164,9 +165,9 @@ export default function RBACManagerPage() {
                     <button
                       onClick={() => handleTogglePermission(admin.id, 'can_manage_users', admin.can_manage_users)}
                       disabled={admin.is_superuser || processingId === admin.id}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${admin.can_manage_users ? 'bg-purple-600' : 'bg-gray-200'} ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${admin.can_manage_users ? 'bg-purple-600' : 'bg-gray-200'} ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''} ${processingId === admin.id ? 'opacity-70 grayscale' : ''}`}
                     >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white ${admin.can_manage_users ? 'translate-x-6' : 'translate-x-1'}`} />
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${admin.can_manage_users ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                   </div>
                 </div>
@@ -212,7 +213,7 @@ export default function RBACManagerPage() {
                         disabled={admin.is_superuser || processingId === admin.id}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                           admin.can_manage_content ? 'bg-blue-600' : 'bg-gray-200'
-                        } ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''} ${processingId === admin.id ? 'opacity-70 grayscale' : ''}`}
                       >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                           admin.can_manage_content ? 'translate-x-6' : 'translate-x-1'
@@ -227,7 +228,7 @@ export default function RBACManagerPage() {
                         disabled={admin.is_superuser || processingId === admin.id}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                           admin.can_approve_admissions ? 'bg-green-600' : 'bg-gray-200'
-                        } ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''} ${processingId === admin.id ? 'opacity-70 grayscale' : ''}`}
                       >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                           admin.can_approve_admissions ? 'translate-x-6' : 'translate-x-1'
@@ -242,7 +243,7 @@ export default function RBACManagerPage() {
                         disabled={admin.is_superuser || processingId === admin.id}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                           admin.can_manage_users ? 'bg-purple-600' : 'bg-gray-200'
-                        } ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''} ${processingId === admin.id ? 'opacity-70 grayscale' : ''}`}
                       >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                           admin.can_manage_users ? 'translate-x-6' : 'translate-x-1'
