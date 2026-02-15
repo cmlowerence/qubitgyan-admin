@@ -1,9 +1,12 @@
-// src/app/admin/rbac/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAdminsRBAC, updateAdminRBAC, AdminRBACProfile } from '@/services/rbac';
-import { Shield, ShieldAlert, Check, X, UserCog } from 'lucide-react';
+import {
+  getAdminsRBAC,
+  updateAdminRBAC,
+  AdminRBACProfile
+} from '@/services/rbac';
+import { Shield, ShieldAlert, UserCog } from 'lucide-react';
 
 export default function RBACManagerPage() {
   const [admins, setAdmins] = useState<AdminRBACProfile[]>([]);
@@ -22,9 +25,13 @@ export default function RBACManagerPage() {
       const data = await getAdminsRBAC();
       setAdmins(data);
     } catch (err: any) {
-      // If a non-superuser tries to load this, the API throws a 403.
-      if (err.message.includes('403') || err.message.includes('Forbidden')) {
-        setError('Access Denied. You must be a Super Admin to view and modify Role-Based Access Controls.');
+      if (
+        err.message.includes('403') ||
+        err.message.includes('Forbidden')
+      ) {
+        setError(
+          'Access Denied. You must be a Super Admin to view and modify Role-Based Access Controls.'
+        );
       } else {
         setError(err.message || 'Failed to load RBAC data.');
       }
@@ -33,30 +40,49 @@ export default function RBACManagerPage() {
     }
   };
 
-  const handleTogglePermission = async (id: number, field: keyof typeof admins[0], currentValue: boolean) => {
+  const handleTogglePermission = async (
+    id: number,
+    field: keyof AdminRBACProfile,
+    currentValue: boolean
+  ) => {
     try {
       setProcessingId(id);
-      await updateAdminRBAC(id, { [field]: !currentValue });
-      // Optimistically update the UI so it feels snappy
-      setAdmins(admins.map(admin => 
-        admin.id === id ? { ...admin, [field]: !currentValue } : admin
-      ));
+
+      await updateAdminRBAC(id, {
+        [field]: !currentValue
+      });
+
+      setAdmins((prev) =>
+        prev.map((admin) =>
+          admin.id === id
+            ? { ...admin, [field]: !currentValue }
+            : admin
+        )
+      );
     } catch (err: any) {
       alert(`Failed to update permission: ${err.message}`);
-      loadRBACData(); // Revert on failure
+      loadRBACData();
     } finally {
       setProcessingId(null);
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500 animate-pulse">Verifying Security Credentials...</div>;
+  if (loading) {
+    return (
+      <div className="p-8 text-center text-gray-500 animate-pulse">
+        Verifying Security Credentials...
+      </div>
+    );
+  }
 
   if (error) {
     return (
       <div className="p-6 max-w-4xl mx-auto mt-10">
         <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center flex flex-col items-center">
           <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold text-red-800 mb-2">Security Clearance Required</h2>
+          <h2 className="text-2xl font-bold text-red-800 mb-2">
+            Security Clearance Required
+          </h2>
           <p className="text-red-600 font-medium">{error}</p>
         </div>
       </div>
@@ -70,167 +96,129 @@ export default function RBACManagerPage() {
           <Shield className="w-6 h-6 text-purple-700" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Access Control (RBAC)</h1>
-          <p className="text-gray-500 text-sm">Manage granular permissions for your administrative staff.</p>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Access Control (RBAC)
+          </h1>
+          <p className="text-gray-500 text-sm">
+            Manage granular permissions for your administrative staff.
+          </p>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Mobile cards */}
-        <div className="md:hidden divide-y divide-gray-100">
-          {admins.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">No staff found.</div>
-          ) : (
-            admins.map((admin) => (
-              <div key={admin.id} className="p-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0">
-                      {admin.avatar ? <img src={admin.avatar} alt={admin.username} className="w-full h-full object-cover rounded-full" /> : admin.username[0].toUpperCase()}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500">
+                <th className="p-4">Staff Member</th>
+                <th className="p-4 text-center">
+                  Manage Content
+                </th>
+                <th className="p-4 text-center">
+                  Approve Admissions
+                </th>
+                <th className="p-4 text-center">
+                  Manage Users
+                </th>
+                <th className="p-4 text-center">
+                  Superuser Status
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-50">
+              {admins.map((admin) => (
+                <tr
+                  key={admin.id}
+                  className="hover:bg-gray-50/50 transition-colors"
+                >
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
+                        {admin.avatar ? (
+                          <img
+                            src={admin.avatar}
+                            alt={admin.username}
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          admin.username[0].toUpperCase()
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-gray-800">
+                          {admin.username}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {admin.email}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-800">{admin.username}</p>
-                      <p className="text-xs text-gray-500">{admin.email}</p>
-                    </div>
-                  </div>
-                  <div>
+                  </td>
+
+                  {[
+                    'can_manage_content',
+                    'can_approve_admissions',
+                    'can_manage_users'
+                  ].map((field) => (
+                    <td
+                      key={field}
+                      className="p-4 text-center"
+                    >
+                      <button
+                        onClick={() =>
+                          handleTogglePermission(
+                            admin.id,
+                            field as keyof AdminRBACProfile,
+                            admin[field as keyof AdminRBACProfile] as boolean
+                          )
+                        }
+                        disabled={
+                          admin.is_superuser ||
+                          processingId === admin.id
+                        }
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          admin[
+                            field as keyof AdminRBACProfile
+                          ]
+                            ? 'bg-blue-600'
+                            : 'bg-gray-200'
+                        } ${
+                          admin.is_superuser
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white ${
+                            admin[
+                              field as keyof AdminRBACProfile
+                            ]
+                              ? 'translate-x-6'
+                              : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </td>
+                  ))}
+
+                  <td className="p-4 text-center">
                     {admin.is_superuser ? (
                       <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded-md text-xs font-bold">
-                        <UserCog className="w-3 h-3" /> ALL ACCESS
+                        <UserCog className="w-3 h-3" />
+                        ALL ACCESS
                       </span>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">Manage Content</div>
-                    <button
-                      onClick={() => handleTogglePermission(admin.id, 'can_manage_content', admin.can_manage_content)}
-                      disabled={admin.is_superuser || processingId === admin.id}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${admin.can_manage_content ? 'bg-blue-600' : 'bg-gray-200'} ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white ${admin.can_manage_content ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">Approve Admissions</div>
-                    <button
-                      onClick={() => handleTogglePermission(admin.id, 'can_approve_admissions', admin.can_approve_admissions)}
-                      disabled={admin.is_superuser || processingId === admin.id}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${admin.can_approve_admissions ? 'bg-green-600' : 'bg-gray-200'} ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white ${admin.can_approve_admissions ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">Manage Users</div>
-                    <button
-                      onClick={() => handleTogglePermission(admin.id, 'can_manage_users', admin.can_manage_users)}
-                      disabled={admin.is_superuser || processingId === admin.id}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${admin.can_manage_users ? 'bg-purple-600' : 'bg-gray-200'} ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white ${admin.can_manage_users ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Desktop table (hidden on small screens) */}
-        <div className="hidden md:block">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500">
-                  <th className="p-4">Staff Member</th>
-                  <th className="p-4 text-center">Manage Content (Nodes/Resources)</th>
-                  <th className="p-4 text-center">Approve Admissions</th>
-                  <th className="p-4 text-center">Manage Users</th>
-                  <th className="p-4 text-center">Superuser Status</th>
+                    ) : (
+                      <span className="text-gray-400 text-xs font-medium">
+                        Restricted Staff
+                      </span>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {admins.map((admin) => (
-                  <tr key={admin.id} className="hover:bg-gray-50/50 transition-colors">
-                    
-                    {/* User Info */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0">
-                          {admin.avatar ? <img src={admin.avatar} alt={admin.username} className="w-full h-full object-cover rounded-full" /> : admin.username[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-800">{admin.username}</p>
-                          <p className="text-xs text-gray-500">{admin.email}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Permission: Manage Content */}
-                    <td className="p-4 text-center">
-                      <button
-                        onClick={() => handleTogglePermission(admin.id, 'can_manage_content', admin.can_manage_content)}
-                        disabled={admin.is_superuser || processingId === admin.id}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                          admin.can_manage_content ? 'bg-blue-600' : 'bg-gray-200'
-                        } ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          admin.can_manage_content ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
-                      </button>
-                    </td>
-
-                    {/* Permission: Approve Admissions */}
-                    <td className="p-4 text-center">
-                      <button
-                        onClick={() => handleTogglePermission(admin.id, 'can_approve_admissions', admin.can_approve_admissions)}
-                        disabled={admin.is_superuser || processingId === admin.id}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                          admin.can_approve_admissions ? 'bg-green-600' : 'bg-gray-200'
-                        } ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          admin.can_approve_admissions ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
-                      </button>
-                    </td>
-
-                    {/* Permission: Manage Users */}
-                    <td className="p-4 text-center">
-                      <button
-                        onClick={() => handleTogglePermission(admin.id, 'can_manage_users', admin.can_manage_users)}
-                        disabled={admin.is_superuser || processingId === admin.id}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                          admin.can_manage_users ? 'bg-purple-600' : 'bg-gray-200'
-                        } ${admin.is_superuser ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          admin.can_manage_users ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
-                      </button>
-                    </td>
-
-                    {/* Superuser Status (Read Only here) */}
-                    <td className="p-4 text-center">
-                      {admin.is_superuser ? (
-                        <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded-md text-xs font-bold">
-                          <UserCog className="w-3 h-3" /> ALL ACCESS
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-xs font-medium">Restricted Staff</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
