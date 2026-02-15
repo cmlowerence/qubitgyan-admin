@@ -4,45 +4,42 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LoadingScreen from '@/components/ui/loading-screen';
-import { getCurrentUser } from '@/services/users';
 import { logoutAdmin } from '@/services/auth';
+import { useCurrentUser } from '@/context/current-user-context';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
 
+  const { user, loading } = useCurrentUser();
+
   useEffect(() => {
     const verifyAccess = async () => {
       const token = localStorage.getItem('access_token');
-      
       if (!token) {
         router.replace('/login');
         return;
       }
 
-      try {
-        // Verify token validity and expiration with backend
-        const user = await getCurrentUser();
-        
-        // Validate user has admin or superuser privileges
-        if (!user.is_staff && !user.is_superuser) {
-          // console.error("Access Denied: User is not staff.");
-          logoutAdmin();
-          router.replace('/login');
-          return;
-        }
+      if (loading) return; // wait for context to resolve
 
-        setAuthorized(true);
-
-      } catch (error) {
-        // console.error("Token validation failed:", error);
+      if (!user) {
         logoutAdmin();
         router.replace('/login');
+        return;
       }
+
+      if (!user.is_staff && !user.is_superuser) {
+        logoutAdmin();
+        router.replace('/login');
+        return;
+      }
+
+      setAuthorized(true);
     };
 
     verifyAccess();
-  }, [router]);
+  }, [router, user, loading]);
 
   if (!authorized) {
     return <LoadingScreen message="Verifying Security Clearance..." />;

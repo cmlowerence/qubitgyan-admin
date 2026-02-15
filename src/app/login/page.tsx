@@ -7,9 +7,11 @@ import { loginAdmin } from '@/services/auth';
 import { api } from '@/lib/api';
 import LoadingScreen from '@/components/ui/loading-screen';
 import LoginForm from './_components/LoginForm';
+import { useCurrentUser } from '@/context/current-user-context';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setUser: setCurrentUser } = useCurrentUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,9 +34,16 @@ export default function LoginPage() {
         throw new Error("Access Restricted: Students cannot access the Admin Portal.");
       }
 
+      // update global current-user context immediately
+      try {
+        setCurrentUser(user);
+      } catch (e) {
+        /* noop */
+      }
+
       setTimeout(() => {
         router.push('/admin/tree');
-      }, 800);
+      }, 400);
 
     } catch (err: any) {
       // console.error(err);

@@ -13,46 +13,13 @@ import { cn } from '@/lib/utils';
 import { Logo } from '@/components/brand/Logo';
 import { logoutAdmin } from '@/services/auth'; 
 import { ConfirmModal } from '@/components/ui/dialogs'; 
-import { User, getCurrentUser } from '@/services/users';
+import { User } from '@/services/users';
+import { useCurrentUser } from '@/context/current-user-context';
 
 export function AdminSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, loading } = useCurrentUser();
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchMe = async () => {
-      try {
-        const me = await getCurrentUser();
-        setUser(me);
-      } catch (error) {
-        // console.error("Failed to fetch user profile", error);
-      }
-    };
-    fetchMe();
-
-    // Listen for user updates (superadmin changed permissions) and storage events from other tabs
-    const handleUserUpdated = async () => {
-      try {
-        const me = await getCurrentUser();
-        setUser(me);
-      } catch (e) {
-        /* noop */
-      }
-    };
-
-    const storageHandler = (ev: StorageEvent) => {
-      if (ev.key === 'qubitgyan_user_updated_at') handleUserUpdated();
-    };
-
-    window.addEventListener('user:updated', handleUserUpdated as EventListener);
-    window.addEventListener('storage', storageHandler);
-
-    return () => {
-      window.removeEventListener('user:updated', handleUserUpdated as EventListener);
-      window.removeEventListener('storage', storageHandler);
-    };
-  }, []);
 
   const handleLogoutConfirm = () => {
     logoutAdmin();

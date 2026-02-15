@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { getAdminsRBAC, updateAdminRBAC, AdminRBACProfile } from '@/services/rbac';
 import { Shield, ShieldAlert, Check, X, UserCog } from 'lucide-react';
+import { useToast } from '@/components/ui/toast';
 
 export default function RBACManagerPage() {
   const [admins, setAdmins] = useState<AdminRBACProfile[]>([]);
@@ -32,6 +33,8 @@ export default function RBACManagerPage() {
       setLoading(false);
     }
   };
+
+  const toast = useToast();
 
   const handleTogglePermission = async (id: number, field: keyof typeof admins[0], currentValue: boolean) => {
     try {
@@ -62,14 +65,18 @@ export default function RBACManagerPage() {
         } catch (e) {
           // ignore (safe-best-effort)
         }
+
+        toast.push({ title: 'Permissions updated', description: 'Saved successfully', variant: 'success' });
       } else {
         // Fallback: optimistic update
         setAdmins(admins.map(admin => 
           admin.id === id ? { ...admin, [field]: !currentValue } : admin
         ));
+
+        toast.push({ title: 'Permissions updated', description: 'Saved (optimistic)', variant: 'success' });
       }
     } catch (err: any) {
-      alert(`Failed to update permission: ${err.message}`);
+      toast.push({ title: 'Update failed', description: err.message || 'Failed to update permission', variant: 'danger' });
       loadRBACData(); // Revert on failure
     } finally {
       setProcessingId(null);

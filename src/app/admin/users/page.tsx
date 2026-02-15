@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  User, getUsers, getCurrentUser, createUser, deleteUser, toggleSuspendUser, updateUser, 
+  User, getUsers, createUser, deleteUser, toggleSuspendUser, updateUser, 
   CreateUserPayload, UpdateUserPayload 
 } from '@/services/users';
 import { CreateUserModal } from '@/components/users/CreateUserModal';
@@ -33,16 +33,14 @@ export default function UsersPage() {
   });
 
   // 1. Fetch Data
+  const { user: ctxUser, loading: userLoading } = useCurrentUser();
+
   useEffect(() => {
     const init = async () => {
       try {
         setLoading(true);
-        const [usersData, meData] = await Promise.all([
-          getUsers(),
-          getCurrentUser()
-        ]);
+        const usersData = await getUsers();
         setUsers(usersData);
-        setCurrentUser(meData);
       } catch (err) {
         // console.error("Failed to load data");
       } finally {
@@ -50,29 +48,12 @@ export default function UsersPage() {
       }
     };
     init();
-
-    // Refresh currentUser when a permission change is broadcast
-    const handleUserUpdated = async () => {
-      try {
-        const me = await getCurrentUser();
-        setCurrentUser(me);
-      } catch (e) {
-        /* ignore */
-      }
-    };
-
-    const storageHandler = (ev: StorageEvent) => {
-      if (ev.key === 'qubitgyan_user_updated_at') handleUserUpdated();
-    };
-
-    window.addEventListener('user:updated', handleUserUpdated as EventListener);
-    window.addEventListener('storage', storageHandler);
-
-    return () => {
-      window.removeEventListener('user:updated', handleUserUpdated as EventListener);
-      window.removeEventListener('storage', storageHandler);
-    };
   }, []); // init
+
+  // keep local currentUser in sync with global context
+  useEffect(() => {
+    setCurrentUser(ctxUser);
+  }, [ctxUser, userLoading]);
 
   const fetchUsers = async () => {
     const data = await getUsers();
