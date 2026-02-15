@@ -50,6 +50,28 @@ export default function UsersPage() {
       }
     };
     init();
+
+    // Refresh currentUser when a permission change is broadcast
+    const handleUserUpdated = async () => {
+      try {
+        const me = await getCurrentUser();
+        setCurrentUser(me);
+      } catch (e) {
+        /* ignore */
+      }
+    };
+
+    const storageHandler = (ev: StorageEvent) => {
+      if (ev.key === 'qubitgyan_user_updated_at') handleUserUpdated();
+    };
+
+    window.addEventListener('user:updated', handleUserUpdated as EventListener);
+    window.addEventListener('storage', storageHandler);
+
+    return () => {
+      window.removeEventListener('user:updated', handleUserUpdated as EventListener);
+      window.removeEventListener('storage', storageHandler);
+    };
   }, []); // init
 
   const fetchUsers = async () => {

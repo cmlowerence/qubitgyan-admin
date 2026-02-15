@@ -153,9 +153,9 @@ export default function StudentActivityPage() {
                         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0 text-xs">
                           {record.user_details.username.charAt(0).toUpperCase()}
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-800 text-sm">{record.user_details.username}</p>
-                          <p className="text-xs text-gray-500">{record.user_details.email}</p>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-800 text-sm truncate">{record.user_details.username}</p>
+                          <p className="text-xs text-gray-500 truncate">{record.user_details.email}</p>
                         </div>
                       </div>
                     </td>

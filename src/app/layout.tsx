@@ -9,6 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "QubitGyan Admin",
   description: "Admin Panel",
+  viewport: 'width=device-width, initial-scale=1',
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

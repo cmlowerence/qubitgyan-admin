@@ -54,6 +54,14 @@ export default function RBACManagerPage() {
               }
             : admin
         ));
+
+        // Notify other parts of the app (and other tabs) so they can refresh current user
+        try {
+          window.dispatchEvent(new CustomEvent('user:updated', { detail: u }));
+          localStorage.setItem('qubitgyan_user_updated_at', String(Date.now()));
+        } catch (e) {
+          // ignore (safe-best-effort)
+        }
       } else {
         // Fallback: optimistic update
         setAdmins(admins.map(admin => 
@@ -183,9 +191,9 @@ export default function RBACManagerPage() {
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0">
                           {admin.avatar ? <img src={admin.avatar} alt={admin.username} className="w-full h-full object-cover rounded-full" /> : admin.username[0].toUpperCase()}
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-800">{admin.username}</p>
-                          <p className="text-xs text-gray-500">{admin.email}</p>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-800 truncate">{admin.username}</p>
+                          <p className="text-xs text-gray-500 truncate">{admin.email}</p>
                         </div>
                       </div>
                     </td>

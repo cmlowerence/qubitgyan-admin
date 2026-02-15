@@ -131,9 +131,9 @@ export default function AdmissionsDeskPage() {
                     <td className="p-4">
                       <p className="font-semibold text-gray-800">{req.student_name}</p>
                     </td>
-                    <td className="p-4 space-y-1">
-                      <p className="text-sm text-gray-600 flex items-center gap-2"><Mail className="w-3 h-3 text-gray-400"/> {req.email}</p>
-                      <p className="text-sm text-gray-600 flex items-center gap-2"><Phone className="w-3 h-3 text-gray-400"/> {req.phone}</p>
+                    <td className="p-4 space-y-1 min-w-0">
+                      <p className="text-sm text-gray-600 flex items-center gap-2 truncate"><Mail className="w-3 h-3 text-gray-400"/> <span className="truncate">{req.email}</span></p>
+                      <p className="text-sm text-gray-600 flex items-center gap-2 truncate"><Phone className="w-3 h-3 text-gray-400"/> <span className="truncate">{req.phone}</span></p>
                     </td>
                     <td className="p-4">
                       <p className="text-sm text-gray-800 line-clamp-2 max-w-xs">{req.learning_goal || '-'}</p>

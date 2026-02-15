@@ -60,12 +60,12 @@ export default function UsersTable({
                           {user.first_name?.[0]?.toUpperCase()}{user.last_name?.[0]?.toUpperCase()}
                         </div>
                       )}
-                      <div>
-                        <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                          {user.first_name} {user.last_name}
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 truncate">
+                          <span className="truncate">{user.first_name} {user.last_name}</span>
                           {currentUser?.id === user.id && <span className="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-black uppercase tracking-wider">(You)</span>}
                         </div>
-                        <div className="text-xs text-slate-400 font-mono">@{user.username}</div>
+                        <div className="text-xs text-slate-400 font-mono truncate">@{user.username}</div>
                       </div>
                     </div>
                   </td>
