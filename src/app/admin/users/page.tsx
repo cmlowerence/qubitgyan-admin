@@ -9,6 +9,7 @@ import {
 import { CreateUserModal } from '@/components/users/CreateUserModal';
 import { EditUserModal } from '@/components/users/EditUserModal';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
+import { useCurrentUser } from '@/context/current-user-context';
 
 // Dumb Components
 import UsersHeader from './_components/UsersHeader';
