@@ -73,9 +73,8 @@ export function CreateUserModal({ isOpen, onClose, onSubmit, isLoading, currentU
     const finalData = {
       ...formData,
       username: formData.email,
-      profile: formData.profile?.avatar_url 
-        ? { avatar_url: formData.profile.avatar_url }
-        : undefined
+      // always send `profile.avatar_url` (empty string clears avatar on backend)
+      profile: { avatar_url: formData.profile?.avatar_url ?? '' }
     };
 
     onSubmit(finalData);

@@ -1,4 +1,3 @@
-// src/components/users/EditUserModal.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -64,9 +63,8 @@ export function EditUserModal({ isOpen, onClose, onSubmit, isLoading, user }: Ed
     const payload: UpdateUserPayload = { 
       ...formData,
       username: formData.email,
-      profile: formData.profile?.avatar_url 
-        ? { avatar_url: formData.profile.avatar_url }
-        : undefined
+      // always include profile.avatar_url ('' = clear)
+      profile: { avatar_url: formData.profile?.avatar_url ?? '' }
     };
 
     if (newPassword) {
