@@ -15,6 +15,7 @@ export default function MediaManagerPage() {
 
   // Filename input for uploads (backend requires both file + filename)
   const [filenameInput, setFilenameInput] = useState('');
+  const [filenameError, setFilenameError] = useState('');
   // Confirm / Alert UI state
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [alertState, setAlertState] = useState<{ open: boolean; title: string; msg: string; type: 'success'|'danger' }>({ open: false, title: '', msg: '', type: 'success' });
@@ -41,16 +42,38 @@ export default function MediaManagerPage() {
     }
   };
 
+  const validateAndNormalizeFilename = (name: string, file?: File) => {
+    const trimmed = name.trim();
+    if (!trimmed) return { valid: false, error: 'Filename cannot be empty.' };
+    if (trimmed.length > 150) return { valid: false, error: 'Filename is too long (max 150 chars).' };
+    if (/[\\/]/.test(trimmed)) return { valid: false, error: 'Filename must not contain path separators.' };
+    // allow letters, numbers, hyphen, underscore and dot (no spaces)
+    if (!/^[A-Za-z0-9_.-]+$/.test(trimmed)) return { valid: false, error: 'Only letters, numbers, dot, hyphen and underscore allowed (no spaces).' };
+
+    // ensure extension is present; if missing, try to infer from uploaded file
+    if (!/\.[A-Za-z0-9]{1,6}$/.test(trimmed)) {
+      if (!file) return { valid: false, error: 'Please include a file extension (e.g. .jpg) or upload a file to infer it.' };
+      const parts = file.name.split('.');
+      const ext = parts.length > 1 ? parts.pop() : '';
+      if (!ext) return { valid: false, error: 'Cannot infer file extension; add it to the filename.' };
+      return { valid: true, normalized: `${trimmed}.${ext}` };
+    }
+
+    return { valid: true, normalized: trimmed };
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Admin must provide a filename for this upload
-    if (!filenameInput.trim()) {
-      setAlertState({ open: true, title: 'Missing filename', msg: 'Please enter a filename before uploading.', type: 'danger' });
+    const { valid, normalized, error: vErr } = validateAndNormalizeFilename(filenameInput, file);
+    if (!valid) {
+      setFilenameError(vErr || 'Invalid filename');
+      setAlertState({ open: true, title: 'Invalid filename', msg: vErr || 'Please correct the filename.', type: 'danger' });
       e.target.value = '';
       return;
     }
+    setFilenameError('');
 
     // Optional client-side size validation (e.g., max 5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -61,7 +84,7 @@ export default function MediaManagerPage() {
 
     try {
       setUploading(true);
-      await uploadMedia(file, filenameInput.trim());
+      await uploadMedia(file, normalized);
       setFilenameInput('');
       await loadData(); // Refresh gallery and storage status
       setAlertState({ open: true, title: 'Uploaded', msg: 'Media uploaded successfully.', type: 'success' });
@@ -156,10 +179,22 @@ export default function MediaManagerPage() {
               type="text"
               placeholder="e.g. course-thumbnail-hero.jpg"
               value={filenameInput}
-              onChange={e => setFilenameInput(e.target.value)}
+              onChange={e => {
+                setFilenameInput(e.target.value);
+                const v = e.target.value.trim();
+                if (!v) setFilenameError('');
+                else if (v.length > 150) setFilenameError('Too long (max 150 chars).');
+                else if (!/^[A-Za-z0-9_.-]*$/.test(v)) setFilenameError('Only letters, numbers, dot, hyphen and underscore allowed (no spaces).');
+                else setFilenameError('');
+              }}
               className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
             />
-            <p className="text-[10px] text-slate-400 mt-1 italic">Provide a filename/title that will be stored with the image.</p>
+            {filenameError ? (
+              <p className="text-[11px] text-red-500 mt-1">{filenameError}</p>
+            ) : (
+              <p className="text-[10px] text-slate-400 mt-1 italic">Provide a filename (letters, numbers, dash, underscore, dot). If you omit an extension it'll be inferred from the uploaded file.</p>
+            )
+          }
           </div>
 
           <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-6 min-h-[200px] hover:bg-gray-100 hover:border-blue-400 transition-colors relative group cursor-pointer">
@@ -167,7 +202,7 @@ export default function MediaManagerPage() {
               type="file" 
               accept="image/*"
               onChange={handleFileUpload}
-              disabled={uploading}
+              disabled={uploading || !!filenameError || !filenameInput.trim()}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
             />
             <UploadCloud className={`w-10 h-10 text-gray-400 mb-3 group-hover:text-blue-500 transition-colors ${uploading ? 'animate-bounce text-blue-500' : ''}`} />
