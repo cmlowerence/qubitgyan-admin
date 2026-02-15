@@ -21,7 +21,7 @@ export default function AdminDashboardPage() {
         const data = await getDashboardStats();
         setStats(data);
       } catch (error) {
-        console.error("Failed to load dashboard stats", error);
+        // console.error("Failed to load dashboard stats", error);
       } finally {
         setLoading(false);
       }

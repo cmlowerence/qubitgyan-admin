@@ -41,7 +41,7 @@ export function GlobalSearch() {
         const data = await globalSearch(query);
         setResults(data || []);
       } catch (error) {
-        console.error("Search failed", error);
+        // console.error("Search failed", error);
         setResults([]);
       } finally {
         setLoading(false);

@@ -14,6 +14,11 @@ export interface User {
   created_by?: string;    // Username of the creator
   avatar_url?: string;
   is_suspended?: boolean;
+
+  // RBAC flags (from User.profile)
+  can_manage_users?: boolean;
+  can_manage_content?: boolean;
+  can_approve_admissions?: boolean;
 }
 
 interface ApiUserProfile {
@@ -34,6 +39,11 @@ interface ApiUserResponse {
   avatar_url?: string;
   is_suspended?: boolean;
   profile?: ApiUserProfile;
+
+  // RBAC flags (may be top-level from serializer)
+  can_manage_users?: boolean;
+  can_manage_content?: boolean;
+  can_approve_admissions?: boolean;
 }
 
 export interface CreateUserPayload {
@@ -84,6 +94,9 @@ export const normalizeUser = (raw: ApiUserResponse): User => {
     created_by: extractCreatedBy(raw.created_by) ?? profile.created_by,
     avatar_url: raw.avatar_url ?? profile.avatar_url,
     is_suspended: raw.is_suspended ?? profile.is_suspended ?? false,
+    can_manage_users: (raw as any).can_manage_users ?? (profile as any)?.can_manage_users ?? false,
+    can_manage_content: (raw as any).can_manage_content ?? (profile as any)?.can_manage_content ?? false,
+    can_approve_admissions: (raw as any).can_approve_admissions ?? (profile as any)?.can_approve_admissions ?? false,
   };
 };
 

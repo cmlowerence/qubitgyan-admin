@@ -37,7 +37,7 @@ export default function LoginPage() {
       }, 800);
 
     } catch (err: any) {
-      console.error(err);
+      // console.error(err);
       // Changed fallback error message to reflect email
       setError(err.message || 'Invalid email or password');
       setIsLoading(false);

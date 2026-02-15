@@ -33,7 +33,7 @@ export default function NotificationsPage() {
       // Filter out staff so we only message students
       setStudents(usersData.filter(u => !u.is_staff));
     } catch (err: any) {
-      console.error("Failed to load data", err);
+      // console.error("Failed to load data", err);
     } finally {
       setLoading(false);
     }

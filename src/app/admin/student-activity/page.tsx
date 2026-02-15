@@ -37,7 +37,7 @@ export default function StudentActivityPage() {
       setRecords(data);
       setFilteredRecords(data);
     } catch (err: any) {
-      console.error("Failed to load activity data", err);
+      // console.error("Failed to load activity data", err);
     } finally {
       setLoading(false);
     }
@@ -89,9 +89,44 @@ export default function StudentActivityPage() {
         </div>
       </div>
 
-      {/* Data Table */}
+      {/* Data (mobile + desktop) */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {filteredRecords.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">No activity records found.</div>
+          ) : (
+            filteredRecords.map((record) => (
+              <div key={record.id} className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 pr-3">
+                    <p className="font-semibold text-gray-800">{record.user_details.username}</p>
+                    <p className="text-xs text-gray-500">{record.user_details.email}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      {getResourceTypeIcon(record.resource_details.resource_type)}
+                      <p className="text-sm text-gray-800 line-clamp-2">{record.resource_details.title}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {record.is_completed ? (
+                      <div className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2.5 py-1 rounded-md text-xs font-bold border border-green-100">
+                        <CheckCircle className="w-3 h-3" /> Completed
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md text-xs font-bold border border-amber-100">
+                        <Clock className="w-3 h-3" /> In Progress
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-400 mt-2">{new Date(record.last_accessed).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop table (hidden on small screens) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500">

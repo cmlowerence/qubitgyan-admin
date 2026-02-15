@@ -23,7 +23,7 @@ export default function UserActions({
   const iconClass = size === 'small' ? 'w-3.5 h-3.5' : 'w-4 h-4';
   
   const isSelf = currentUser?.id === user.id;
-  const hasRankAuthority = currentUser?.is_superuser || !user.is_staff;
+  const hasRankAuthority = currentUser?.is_superuser || (currentUser?.can_manage_users && !user.is_staff);
 
   // SCENARIO 1: IT IS ME
   if (isSelf) {

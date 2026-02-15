@@ -64,7 +64,7 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
       setContexts(data);
       if (data.length > 0) setSelectedContext(data[0].id.toString());
     } catch (err) {
-      console.error("Failed to load contexts");
+      // console.error("Failed to load contexts");
     }
   };
 

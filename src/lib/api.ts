@@ -36,7 +36,7 @@ api.interceptors.response.use(
 );
 
 export const handleApiError = (error: any) => {
-  console.error('API Error Object:', error);
+  // console.error('API Error Object:', error);
   if (error.response) {
     // Return detailed server message
     const msg = error.response.data.detail || JSON.stringify(error.response.data);

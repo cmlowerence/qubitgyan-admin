@@ -44,13 +44,13 @@ export default function UsersPage() {
         setUsers(usersData);
         setCurrentUser(meData);
       } catch (err) {
-        console.error("Failed to load data");
+        // console.error("Failed to load data");
       } finally {
         setLoading(false);
       }
     };
     init();
-  }, []);
+  }, []); // init
 
   const fetchUsers = async () => {
     const data = await getUsers();

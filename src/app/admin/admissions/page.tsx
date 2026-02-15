@@ -20,7 +20,7 @@ export default function AdmissionsDeskPage() {
       const data = await getAdmissions();
       setAdmissions(data);
     } catch (error) {
-      console.error("Failed to load admissions", error);
+      // console.error("Failed to load admissions", error);
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,41 @@ export default function AdmissionsDeskPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile cards (visible on small screens) */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {admissions.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">No applications found.</div>
+          ) : (
+            admissions.map((req) => (
+              <div key={req.id} className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 pr-3">
+                    <p className="font-semibold text-gray-800">{req.student_name}</p>
+                    <p className="text-xs text-gray-500">{new Date(req.created_at).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-600 mt-2 line-clamp-2">{req.learning_goal || '-'}</p>
+                    <p className="text-xs text-gray-400 mt-1">Grade: {req.class_grade || '-'}</p>
+                  </div>
+                  <div className="ml-2">{getStatusBadge(req.status)}</div>
+                </div>
+
+                <div className="flex items-center justify-between mt-3 gap-4">
+                  <div className="text-sm text-gray-600 flex items-center gap-2"><Mail className="w-3 h-3 text-gray-400"/> {req.email}</div>
+                  <div className="flex gap-2">
+                    {req.status === 'PENDING' && (
+                      <>
+                        <button onClick={() => handleProcess(req.id, 'APPROVED')} disabled={processingId === req.id} className="px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-md">Approve</button>
+                        <button onClick={() => handleProcess(req.id, 'REJECTED')} disabled={processingId === req.id} className="px-3 py-1 bg-red-50 text-red-700 text-xs font-medium rounded-md">Reject</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop table (hidden on small screens) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500">

@@ -45,7 +45,7 @@ export default function CreateCourseModal({ isOpen, onClose, onSuccess }: Create
       const nodes = await getKnowledgeTree();
       setRootNodes(nodes);
     } catch (err) {
-      console.error("Failed to fetch root nodes", err);
+      // console.error("Failed to fetch root nodes", err);
     } finally {
       setLoadingNodes(false);
     }

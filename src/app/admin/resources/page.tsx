@@ -36,7 +36,7 @@ export default function GlobalLibraryPage() {
         const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
         setContexts(data);
       } catch (err) {
-        console.error("Failed to load filter contexts");
+        // console.error("Failed to load filter contexts");
       }
     };
     loadContexts();
@@ -59,7 +59,7 @@ export default function GlobalLibraryPage() {
       });
       setResources(data);
     } catch (err) {
-      console.error("Failed to fetch global resources");
+      // console.error("Failed to fetch global resources");
       setResources([]);
     } finally {
       setLoading(false);

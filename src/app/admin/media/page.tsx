@@ -13,9 +13,12 @@ export default function MediaManagerPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
-  // Filename input for uploads (backend requires both file + filename)
+  // Filename input for uploads (backend requires both `file` + `name`)
   const [filenameInput, setFilenameInput] = useState('');
   const [filenameError, setFilenameError] = useState('');
+  // Optional category selector for uploads (backend supports `category`)
+  const [categoryInput, setCategoryInput] = useState<string>('General');
+  const CATEGORY_OPTIONS = ['General','Thumbnails','Avatars','Banners','Other'] as const;
   // Confirm / Alert UI state
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [alertState, setAlertState] = useState<{ open: boolean; title: string; msg: string; type: 'success'|'danger' }>({ open: false, title: '', msg: '', type: 'success' });
@@ -84,9 +87,20 @@ export default function MediaManagerPage() {
 
     try {
       setUploading(true);
-      await uploadMedia(file, normalized);
+      const uploaded = await uploadMedia(file, normalized, categoryInput);
+
+      // Prepend returned item so UI is immediate and no re-fetch is required.
+      setMedia(prev => [uploaded, ...prev]);
+
+      // Refresh only storage status (cheap) — media list already updated
+      try {
+        const s = await getStorageStatus();
+        setStatus(s);
+      } catch (e) {
+        /* swallow — non-critical */
+      }
+
       setFilenameInput('');
-      await loadData(); // Refresh gallery and storage status
       setAlertState({ open: true, title: 'Uploaded', msg: 'Media uploaded successfully.', type: 'success' });
     } catch (err: any) {
       setAlertState({ open: true, title: 'Upload failed', msg: err.message || 'Upload failed', type: 'danger' });
@@ -197,6 +211,20 @@ export default function MediaManagerPage() {
           }
           </div>
 
+          <div className="mb-3">
+            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Category (optional)</label>
+            <select
+              value={categoryInput}
+              onChange={(e) => setCategoryInput(e.target.value)}
+              className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+            >
+              {CATEGORY_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-slate-400 mt-1 italic">Optional grouping for uploads (will be stored as `category`).</p>
+          </div>
+
           <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-6 min-h-[200px] hover:bg-gray-100 hover:border-blue-400 transition-colors relative group cursor-pointer">
             <input 
               type="file" 
@@ -230,9 +258,10 @@ export default function MediaManagerPage() {
             </div>
             
             <div className="p-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center text-xs text-gray-500">
-              <span className="truncate max-w-[150px] font-medium text-gray-700" title={item.file.split('/').pop()}>
-                {item.filename || item.file.split('/').pop()}
-              </span>
+              <div className="truncate max-w-[150px] font-medium text-gray-700" title={item.file.split('/').pop()}>
+                <div className="truncate">{item.filename || item.file.split('/').pop()}</div>
+                {item.category && <div className="text-[10px] text-slate-400 mt-1">{item.category}</div>}
+              </div>
               <span>{new Date(item.created_at).toLocaleDateString()}</span>
             </div>
           </div>

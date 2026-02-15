@@ -57,7 +57,7 @@ export default function NodeDetailsPage() {
       setCurrentNode(data);
       setChildren(Array.isArray(data.children) ? data.children : []);
     } catch (err: any) {
-      console.error("Fetch Error:", err);
+      // console.error("Fetch Error:", err);
       setError(err.message || 'Failed to load node details');
       setDebugData({
         message: err.message,

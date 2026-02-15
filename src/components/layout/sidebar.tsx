@@ -26,7 +26,7 @@ export function AdminSidebar({ className }: { className?: string }) {
         const me = await getCurrentUser();
         setUser(me);
       } catch (error) {
-        console.error("Failed to fetch user profile", error);
+        // console.error("Failed to fetch user profile", error);
       }
     };
     fetchMe();

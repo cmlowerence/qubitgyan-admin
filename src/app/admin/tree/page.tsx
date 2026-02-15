@@ -48,7 +48,7 @@ export default function TreeManagementPage() {
       }
 
     } catch (err: any) {
-      console.error("Tree Fetch Error:", err);
+      // console.error("Tree Fetch Error:", err);
       setError(err.message || 'Failed to load knowledge tree');
       
       setDebugData({

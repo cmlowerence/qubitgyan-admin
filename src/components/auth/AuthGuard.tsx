@@ -26,7 +26,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         
         // Validate user has admin or superuser privileges
         if (!user.is_staff && !user.is_superuser) {
-          console.error("Access Denied: User is not staff.");
+          // console.error("Access Denied: User is not staff.");
           logoutAdmin();
           router.replace('/login');
           return;
@@ -35,7 +35,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         setAuthorized(true);
 
       } catch (error) {
-        console.error("Token validation failed:", error);
+        // console.error("Token validation failed:", error);
         logoutAdmin();
         router.replace('/login');
       }

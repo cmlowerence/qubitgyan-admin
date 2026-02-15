@@ -11,7 +11,7 @@ export default function Error({
 }) {
   useEffect(() => {
     // Also log to console for remote debugging if connected
-    console.error(error);
+    // console.error(error);
   }, [error]);
 
   return (

@@ -22,7 +22,7 @@ export default function CourseManagerPage() {
       const data = await getManagerCourses();
       setCourses(data);
     } catch (error) {
-      console.error("Failed to load courses", error);
+      // console.error("Failed to load courses", error);
     } finally {
       setLoading(false);
     }

@@ -16,7 +16,7 @@ export const getKnowledgeTree = async (): Promise<KnowledgeNode[]> => {
     }
     
     // If we get here, the backend sent something weird
-    console.error("Unexpected API response format:", response.data);
+    // console.error("Unexpected API response format:", response.data);
     return []; 
     
   } catch (error) {

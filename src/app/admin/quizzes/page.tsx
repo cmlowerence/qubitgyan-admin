@@ -20,7 +20,7 @@ export default function QuizManagerPage() {
       const data = await getManagerQuizzes();
       setQuizzes(data);
     } catch (error) {
-      console.error("Failed to load quizzes", error);
+      // console.error("Failed to load quizzes", error);
     } finally {
       setLoading(false);
     }

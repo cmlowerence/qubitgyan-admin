@@ -12,7 +12,8 @@ export interface StorageStatus {
 export interface UploadedMedia {
   id: number;
   file: string;
-  filename?: string; 
+  filename?: string;
+  category?: string;
   size?: number;
   created_at: string;
 }
@@ -29,25 +30,44 @@ export const getStorageStatus = async (): Promise<StorageStatus> => {
 export const getMediaList = async (): Promise<UploadedMedia[]> => {
   try {
     const response = await api.get('/manager/media/');
-    return Array.isArray(response.data) ? response.data : (response.data.results || []);
+    const raw = Array.isArray(response.data) ? response.data : (response.data.results || []);
+
+    // Normalize backend fields to the frontend shape the UI expects.
+    return raw.map((r: any) => ({
+      id: r.id,
+      file: r.public_url || r.file || '',
+      filename: r.name || r.filename || (r.public_url ? r.public_url.split('/').pop() : ''),
+      category: r.category || r.meta?.category || undefined,
+      size: r.file_size_bytes ?? (r.size_kb ? Math.round((r.size_kb || 0) * 1024) : undefined),
+      created_at: r.uploaded_at || r.created_at || new Date().toISOString(),
+    }));
   } catch (error) {
     throw handleApiError(error);
   }
 };
 
-export const uploadMedia = async (file: File, filename?: string): Promise<UploadedMedia> => {
+export const uploadMedia = async (file: File, filename?: string, category?: string): Promise<UploadedMedia> => {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    // backend expects a name/filename alongside the uploaded file
-    formData.append('filename', (filename || file.name));
+    // backend expects the field name `name` (not `filename`)
+    formData.append('name', (filename || file.name));
+    if (category) formData.append('category', category);
 
-    const response = await api.post('/manager/media/upload/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    // Let axios set the multipart boundary for us (do not set Content-Type manually)
+    const response = await api.post('/manager/media/upload/', formData);
+
+    // Prefer full UploadedImage object from backend when available.
+    const d = response.data || {};
+
+    return {
+      id: d.id ?? (d.pk ?? -1),
+      file: d.public_url || d.file || '',
+      filename: d.name || filename || file.name,
+      category: d.category || category || undefined,
+      size: d.file_size_bytes ?? (d.size_kb ? Math.round((d.size_kb || 0) * 1024) : file.size),
+      created_at: d.uploaded_at || d.created_at || new Date().toISOString(),
+    } as UploadedMedia;
   } catch (error) {
     throw handleApiError(error);
   }
