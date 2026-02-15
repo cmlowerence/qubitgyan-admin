@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { getAdminsRBAC, updateAdminRBAC, AdminRBACProfile } from '@/services/rbac';
-import { Shield, ShieldAlert, Check, X, UserCog } from 'lucide-react';
+import { Shield, ShieldAlert, UserCog } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 
 export default function RBACManagerPage() {
@@ -22,9 +22,30 @@ export default function RBACManagerPage() {
       setLoading(true);
       setError('');
       const data = await getAdminsRBAC();
-      setAdmins(data);
+
+      // Normalize the incoming data to enforce strict booleans
+      const normalizedAdmins = data.map((admin: any) => {
+        // Helper function to safely parse anything into a true boolean
+        const toBool = (val: any) => {
+          if (typeof val === 'boolean') return val;
+          if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
+          if (typeof val === 'number') return val === 1;
+          return false;
+        };
+
+        return {
+          ...admin,
+          // We check `admin.permissions?.` just in case the backend nests them on GET, 
+          // falling back to `admin.` if they are flat properties.
+          can_manage_content: toBool(admin.permissions?.can_manage_content ?? admin.can_manage_content),
+          can_approve_admissions: toBool(admin.permissions?.can_approve_admissions ?? admin.can_approve_admissions),
+          can_manage_users: toBool(admin.permissions?.can_manage_users ?? admin.can_manage_users),
+          is_superuser: toBool(admin.is_superuser),
+        };
+      });
+
+      setAdmins(normalizedAdmins);
     } catch (err: any) {
-      // If a non-superuser tries to load this, the API throws a 403.
       if (err.message?.includes('403') || err.message?.includes('Forbidden')) {
         setError('Access Denied. You must be a Super Admin to view and modify Role-Based Access Controls.');
       } else {
@@ -40,45 +61,46 @@ export default function RBACManagerPage() {
       setProcessingId(id);
       const res = await updateAdminRBAC(id, { [field]: !currentValue });
 
-      // If backend returned the updated user object, use it to update local state
       if (res && res.user) {
         const u = res.user;
         
+        const toBool = (val: any) => {
+          if (typeof val === 'boolean') return val;
+          if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
+          if (typeof val === 'number') return val === 1;
+          return false;
+        };
+
         setAdmins(prevAdmins => prevAdmins.map(admin =>
           admin.id === id
             ? {
                 ...admin,
-                // keep avatar key name consistent with AdminRBACProfile
                 avatar: u.avatar_url ?? admin.avatar,
-                // Enforce strict boolean conversion in case the backend returns 0/1 integers
-                can_manage_content: Boolean(u.can_manage_content),
-                can_approve_admissions: Boolean(u.can_approve_admissions),
-                can_manage_users: Boolean(u.can_manage_users),
-                is_superuser: Boolean(u.is_superuser),
+                can_manage_content: toBool(u.can_manage_content),
+                can_approve_admissions: toBool(u.can_approve_admissions),
+                can_manage_users: toBool(u.can_manage_users),
+                is_superuser: toBool(u.is_superuser),
               }
             : admin
         ));
 
-        // Notify other parts of the app (and other tabs) so they can refresh current user
         try {
           window.dispatchEvent(new CustomEvent('user:updated', { detail: u }));
           localStorage.setItem('qubitgyan_user_updated_at', String(Date.now()));
         } catch (e) {
-          // ignore (safe-best-effort)
+          // ignore
         }
 
         toast.push({ title: 'Permissions updated', description: 'Saved successfully', variant: 'success' });
       } else {
-        // Fallback: optimistic update if no user object is returned
         setAdmins(prevAdmins => prevAdmins.map(admin => 
           admin.id === id ? { ...admin, [field]: !currentValue } : admin
         ));
-
         toast.push({ title: 'Permissions updated', description: 'Saved (optimistic)', variant: 'success' });
       }
     } catch (err: any) {
       toast.push({ title: 'Update failed', description: err.message || 'Failed to update permission', variant: 'danger' });
-      loadRBACData(); // Revert on failure to ensure UI matches the true database state
+      loadRBACData(); 
     } finally {
       setProcessingId(null);
     }
@@ -176,7 +198,7 @@ export default function RBACManagerPage() {
           )}
         </div>
 
-        {/* Desktop table (hidden on small screens) */}
+        {/* Desktop table */}
         <div className="hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -193,7 +215,6 @@ export default function RBACManagerPage() {
                 {admins.map((admin) => (
                   <tr key={admin.id} className="hover:bg-gray-50/50 transition-colors">
                     
-                    {/* User Info */}
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0">
@@ -206,7 +227,6 @@ export default function RBACManagerPage() {
                       </div>
                     </td>
 
-                    {/* Permission: Manage Content */}
                     <td className="p-4 text-center">
                       <button
                         onClick={() => handleTogglePermission(admin.id, 'can_manage_content', admin.can_manage_content)}
@@ -221,7 +241,6 @@ export default function RBACManagerPage() {
                       </button>
                     </td>
 
-                    {/* Permission: Approve Admissions */}
                     <td className="p-4 text-center">
                       <button
                         onClick={() => handleTogglePermission(admin.id, 'can_approve_admissions', admin.can_approve_admissions)}
@@ -236,7 +255,6 @@ export default function RBACManagerPage() {
                       </button>
                     </td>
 
-                    {/* Permission: Manage Users */}
                     <td className="p-4 text-center">
                       <button
                         onClick={() => handleTogglePermission(admin.id, 'can_manage_users', admin.can_manage_users)}
@@ -251,7 +269,6 @@ export default function RBACManagerPage() {
                       </button>
                     </td>
 
-                    {/* Superuser Status (Read Only here) */}
                     <td className="p-4 text-center">
                       {admin.is_superuser ? (
                         <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded-md text-xs font-bold">
