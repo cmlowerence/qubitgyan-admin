@@ -59,10 +59,11 @@ export function EditUserModal({ isOpen, onClose, onSubmit, isLoading, user }: Ed
     e.preventDefault();
     setError('');
 
-    // Final sync before submission
-    const payload: UpdateUserPayload = { 
-      ...formData,
-      username: formData.email,
+    // Build update payload — do NOT include `username` (some backends disallow changing it)
+    const payload: UpdateUserPayload = {
+      email: formData.email,
+      first_name: formData.first_name,
+      last_name: formData.last_name,
       // always include profile.avatar_url ('' = clear)
       profile: { avatar_url: formData.profile?.avatar_url ?? '' }
     };
@@ -72,7 +73,8 @@ export function EditUserModal({ isOpen, onClose, onSubmit, isLoading, user }: Ed
         setError("New password must be at least 6 characters long.");
         return;
       }
-      payload.password = newPassword;
+      // password is optional on update
+      (payload as any).password = newPassword;
     }
 
     onSubmit(user.id, payload);
@@ -125,10 +127,10 @@ export function EditUserModal({ isOpen, onClose, onSubmit, isLoading, user }: Ed
               type="email"
               className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-indigo-500" 
               value={formData.email} 
-              onChange={e => setFormData({ ...formData, email: e.target.value, username: e.target.value })} 
+              onChange={e => setFormData({ ...formData, email: e.target.value })} 
               required 
             />
-            <p className="text-[10px] text-slate-400 mt-1 italic">Updating the email will also update the system username.</p>
+            <p className="text-[10px] text-slate-400 mt-1 italic">Updating the email will not change the immutable username on the backend.</p>
           </div>
 
           <hr className="border-slate-100 dark:border-slate-800" />

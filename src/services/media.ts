@@ -35,10 +35,12 @@ export const getMediaList = async (): Promise<UploadedMedia[]> => {
   }
 };
 
-export const uploadMedia = async (file: File): Promise<UploadedMedia> => {
+export const uploadMedia = async (file: File, filename?: string): Promise<UploadedMedia> => {
   try {
     const formData = new FormData();
-    formData.append('file', file); 
+    formData.append('file', file);
+    // backend expects a name/filename alongside the uploaded file
+    formData.append('filename', (filename || file.name));
 
     const response = await api.post('/manager/media/upload/', formData, {
       headers: {

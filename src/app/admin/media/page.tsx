@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { getMediaList, getStorageStatus, uploadMedia, deleteMedia, UploadedMedia, StorageStatus } from '@/services/media';
 import { Image as ImageIcon, UploadCloud, Trash2, HardDrive, AlertTriangle } from 'lucide-react';
+import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
 
 export default function MediaManagerPage() {
   const [media, setMedia] = useState<UploadedMedia[]>([]);
@@ -11,6 +12,12 @@ export default function MediaManagerPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+
+  // Filename input for uploads (backend requires both file + filename)
+  const [filenameInput, setFilenameInput] = useState('');
+  // Confirm / Alert UI state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [alertState, setAlertState] = useState<{ open: boolean; title: string; msg: string; type: 'success'|'danger' }>({ open: false, title: '', msg: '', type: 'success' });
 
   useEffect(() => {
     loadData();
@@ -38,18 +45,28 @@ export default function MediaManagerPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Admin must provide a filename for this upload
+    if (!filenameInput.trim()) {
+      setAlertState({ open: true, title: 'Missing filename', msg: 'Please enter a filename before uploading.', type: 'danger' });
+      e.target.value = '';
+      return;
+    }
+
     // Optional client-side size validation (e.g., max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("File is too large! Please select an image under 5MB.");
+      setAlertState({ open: true, title: 'File too large', msg: 'Please select an image under 5MB.', type: 'danger' });
+      e.target.value = '';
       return;
     }
 
     try {
       setUploading(true);
-      await uploadMedia(file);
+      await uploadMedia(file, filenameInput.trim());
+      setFilenameInput('');
       await loadData(); // Refresh gallery and storage status
+      setAlertState({ open: true, title: 'Uploaded', msg: 'Media uploaded successfully.', type: 'success' });
     } catch (err: any) {
-      alert(`Upload failed: ${err.message}`);
+      setAlertState({ open: true, title: 'Upload failed', msg: err.message || 'Upload failed', type: 'danger' });
     } finally {
       setUploading(false);
       // Clear the file input
@@ -57,19 +74,24 @@ export default function MediaManagerPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to permanently delete this image from Supabase? This action cannot be undone.")) return;
-    
+  // open confirm dialog (user must confirm)
+  const handleDelete = (id: number) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId) return;
     try {
-      await deleteMedia(id);
+      setLoading(true);
+      await deleteMedia(confirmDeleteId);
+      setConfirmDeleteId(null);
       await loadData(); // Refresh gallery and storage status
+      setAlertState({ open: true, title: 'Deleted', msg: 'Media deleted successfully.', type: 'success' });
     } catch (err: any) {
-      // If a non-superuser tries to delete, the backend throws a 403
-      if (err.message.includes('403') || err.message.includes('Forbidden')) {
-        alert("Action Forbidden: Only Super Admins can delete files from Supabase to prevent accidental data loss.");
-      } else {
-        alert(`Failed to delete media: ${err.message}`);
-      }
+      const msg = err.message || 'Failed to delete media.';
+      setAlertState({ open: true, title: 'Delete failed', msg, type: 'danger' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,17 +149,31 @@ export default function MediaManagerPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Upload Button Card */}
-        <div className="col-span-1 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-6 min-h-[200px] hover:bg-gray-100 hover:border-blue-400 transition-colors relative group cursor-pointer">
-          <input 
-            type="file" 
-            accept="image/*"
-            onChange={handleFileUpload}
-            disabled={uploading}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-          />
-          <UploadCloud className={`w-10 h-10 text-gray-400 mb-3 group-hover:text-blue-500 transition-colors ${uploading ? 'animate-bounce text-blue-500' : ''}`} />
-          <p className="font-semibold text-gray-700 text-center">{uploading ? 'Uploading...' : 'Click or Drag to Upload'}</p>
-          <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 5MB</p>
+        <div className="col-span-1">
+          <div className="mb-3">
+            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Filename</label>
+            <input
+              type="text"
+              placeholder="e.g. course-thumbnail-hero.jpg"
+              value={filenameInput}
+              onChange={e => setFilenameInput(e.target.value)}
+              className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+            />
+            <p className="text-[10px] text-slate-400 mt-1 italic">Provide a filename/title that will be stored with the image.</p>
+          </div>
+
+          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-6 min-h-[200px] hover:bg-gray-100 hover:border-blue-400 transition-colors relative group cursor-pointer">
+            <input 
+              type="file" 
+              accept="image/*"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+            />
+            <UploadCloud className={`w-10 h-10 text-gray-400 mb-3 group-hover:text-blue-500 transition-colors ${uploading ? 'animate-bounce text-blue-500' : ''}`} />
+            <p className="font-semibold text-gray-700 text-center">{uploading ? 'Uploading...' : 'Click or Drag to Upload'}</p>
+            <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 5MB</p>
+          </div>
         </div>
 
         {/* Image Grid */}
@@ -168,6 +204,27 @@ export default function MediaManagerPage() {
         ))}
 
       </div>
+
+      {/* Confirm & Alert Modals (use project UI, not window.alert/confirm) */}
+      <ConfirmModal
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete File?"
+        message="Are you sure you want to permanently delete this image from Supabase? This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
+        isLoading={loading && !!confirmDeleteId}
+      />
+
+      <AlertModal
+        isOpen={alertState.open}
+        onClose={() => setAlertState(prev => ({ ...prev, open: false }))}
+        title={alertState.title}
+        message={alertState.msg}
+        type={alertState.type === 'danger' ? 'danger' : 'success'}
+      />
+
     </div>
   );
 }
