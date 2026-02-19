@@ -6,10 +6,12 @@ import { Plus, Loader2, FilePlus } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Resource, ResourceType } from '@/types/resource';
 import { getResourcesByNode, createResource, deleteResource, updateResource, reorderResources } from '@/services/resource';
+import { getMediaList, UploadedMedia } from '@/services/media';
 import { ResourceCard } from './ResourceCard';
 import { api } from '@/lib/api';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs'; 
 import { EditResourceModal } from './EditResourceModal';
+import { MediaUrlPicker } from '@/components/media/MediaUrlPicker';
 
 export function ResourceManager({ nodeId }: { nodeId: number }) {
   // Data State
@@ -23,6 +25,7 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
   const [type, setType] = useState<ResourceType>('PDF');
   const [url, setUrl] = useState('');
   const [selectedContext, setSelectedContext] = useState<string>('');
+  const [media, setMedia] = useState<UploadedMedia[]>([]);
 
   // Dialog & Modal States
   const [alertState, setAlertState] = useState<{ open: boolean; title: string; msg: string; type: 'success'|'danger' }>({
@@ -38,6 +41,7 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
   useEffect(() => {
     fetchResources();
     fetchContexts();
+    getMediaList().then(setMedia).catch(() => setMedia([]));
   }, [nodeId]);
 
   // --- Fetching ---
@@ -195,13 +199,12 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
           </div>
         </div>
 
-        {/* URL Input */}
-        <input 
-          placeholder={type === 'PDF' ? "Paste Google Drive Link" : "Paste URL"} 
-          className="w-full p-2.5 border rounded-lg text-sm outline-none shadow-sm" 
-          value={url} 
-          onChange={e => setUrl(e.target.value)} 
-          required 
+        <MediaUrlPicker
+          value={url}
+          onChange={setUrl}
+          media={media}
+          label={type === 'PDF' ? 'Google Drive Link / Pick image URL' : 'External URL / Pick image URL'}
+          placeholder={type === 'PDF' ? 'Paste Google Drive Link' : 'Paste URL'}
         />
         
         {/* Submit Button */}
@@ -278,6 +281,7 @@ export function ResourceManager({ nodeId }: { nodeId: number }) {
         resource={editingResource}
         onSave={handleEditSave}
         isLoading={isSavingEdit}
+        media={media}
       />
     </div>
   );
