@@ -19,7 +19,6 @@ import LoadingScreen from '@/components/ui/loading-screen';
 import CreateNodeModal from '@/components/tree/CreateNodeModal';
 import EditNodeModal from '@/components/tree/EditNodeModal';
 import { ResourceManager } from '@/components/resources/ResourceManager'; 
-import DebugConsole from '@/components/debug/DebugConsole';
 
 // Dumb Components
 import NodeHeader from './_components/NodeHeader';
@@ -36,7 +35,6 @@ export default function NodeDetailsPage() {
   const [children, setChildren] = useState<KnowledgeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugData, setDebugData] = useState<any>(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -53,18 +51,13 @@ export default function NodeDetailsPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getKnowledgeNode(nodeId);
+      const data = await getKnowledgeNode(nodeId, 2);
       setCurrentNode(data);
       setChildren(Array.isArray(data.children) ? data.children : []);
     } catch (err: any) {
       // console.error("Fetch Error:", err);
       setError(err.message || 'Failed to load node details');
-      setDebugData({
-        message: err.message,
-        status: err.response?.status,
-        responseData: err.response?.data,
-        targetUrl: `/nodes/${nodeId}/`
-      });
+
     } finally {
       setIsLoading(false);
     }
@@ -180,10 +173,6 @@ export default function NodeDetailsPage() {
         node={editingNode}
         isLoading={isProcessing}
       />
-
-      <div className="mt-12 opacity-50 grayscale hover:grayscale-0 transition-all">
-        <DebugConsole error={debugData} />
-      </div>
 
     </div>
   );

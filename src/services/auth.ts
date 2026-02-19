@@ -1,4 +1,3 @@
-// src/services/auth.ts
 import axios from 'axios';
 import { handleApiError } from '@/lib/api';
 
@@ -7,23 +6,33 @@ interface LoginResponse {
   refresh: string;
 }
 
-// Extract base domain from API URL
-const BASE_DOMAIN = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'https://qubitgyan-api.onrender.com';
+const resolveTokenUrl = () => {
+  const configured = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1').trim();
+
+  if (/^https?:\/\//i.test(configured)) return configured.replace(/\/api\/v1\/?$/, '');
+
+  if (configured.startsWith('/')) {
+    const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN?.trim();
+    if (backendOrigin) return backendOrigin.replace(/\/+$/, '');
+    if (typeof window !== 'undefined') return window.location.origin;
+  }
+
+  return 'http://localhost:8000';
+};
 
 export const loginAdmin = async (email: string, password: string) => {
   try {
-    // Backend Map specifies inputting the email into the 'username' field
-    const response = await axios.post<LoginResponse>(`${BASE_DOMAIN}/api/token/`, {
-      username: email, 
+    const response = await axios.post<LoginResponse>(`${resolveTokenUrl()}/api/token/`, {
+      username: email,
       password,
     });
-    
+
     if (response.data.access) {
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
       return true;
     }
-    
+
     return false;
   } catch (error) {
     throw handleApiError(error);

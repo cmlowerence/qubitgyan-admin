@@ -22,11 +22,13 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [superPanel, setSuperPanel] = useState<SuperadminPanel | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useCurrentUser();
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setError(null);
         const data = await getDashboardStats();
         setStats(data);
 
@@ -44,6 +46,8 @@ export default function AdminDashboardPage() {
             storageUsed: storage.status === 'fulfilled' ? Math.round(storage.value.usage_percentage ?? storage.value.percentage_used ?? 0) : 0,
           });
         }
+      } catch (err: any) {
+        setError(err.message || 'Failed to load dashboard data.');
       } finally {
         setLoading(false);
       }
@@ -61,7 +65,9 @@ export default function AdminDashboardPage() {
     ];
   }, [stats]);
 
-  if (loading || !stats) return <div className="p-6 text-center text-gray-500 animate-pulse">Loading admin analytics...</div>;
+  if (loading) return <div className="p-6 text-center text-gray-500 animate-pulse">Loading admin analytics...</div>;
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
+  if (!stats) return <div className="p-6 text-slate-500">No dashboard data available.</div>;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">

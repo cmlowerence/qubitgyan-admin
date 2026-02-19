@@ -1,24 +1,17 @@
-// src/services/tree.ts
 import { api, handleApiError } from '@/lib/api';
 import { KnowledgeNode, CreateNodePayload, UpdateNodePayload } from '@/types/tree';
 
-export const getKnowledgeTree = async (): Promise<KnowledgeNode[]> => {
+export type TreeDepth = 1 | 2 | 3 | 'full';
+
+const unwrapList = (data: any) => {
+  if (data?.results && Array.isArray(data.results)) return data.results;
+  return Array.isArray(data) ? data : [];
+};
+
+export const getKnowledgeTree = async (depth: TreeDepth = 1): Promise<KnowledgeNode[]> => {
   try {
-    const response = await api.get('/nodes/');
-    
-    // SMART UNWRAP: Check if the data is paginated (Django default) or flat
-    if (response.data.results && Array.isArray(response.data.results)) {
-      // Backend sent: { count: 5, results: [...] }
-      return response.data.results;
-    } else if (Array.isArray(response.data)) {
-      // Backend sent: [...] (Raw list)
-      return response.data;
-    }
-    
-    // If we get here, the backend sent something weird
-    // console.error("Unexpected API response format:", response.data);
-    return []; 
-    
+    const response = await api.get('/tree/', { params: { depth } });
+    return unwrapList(response.data);
   } catch (error) {
     throw handleApiError(error);
   }
@@ -50,9 +43,9 @@ export const deleteKnowledgeNode = async (id: number): Promise<void> => {
   }
 };
 
-export const getKnowledgeNode = async (id: number): Promise < KnowledgeNode > => {
+export const getKnowledgeNode = async (id: number, depth: TreeDepth = 2): Promise<KnowledgeNode> => {
   try {
-    const response = await api.get(`/nodes/${id}/`);
+    const response = await api.get(`/nodes/${id}/`, { params: { depth } });
     return response.data;
   } catch (error) {
     throw handleApiError(error);

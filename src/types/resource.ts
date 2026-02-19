@@ -1,5 +1,5 @@
 // src/types/resource.ts
-export type ResourceType = 'VIDEO' | 'PDF' | 'LINK' | 'DOCUMENT';
+export type ResourceType = 'VIDEO' | 'PDF' | 'LINK' | 'DOCUMENT' | 'QUIZ';
 
 export interface ProgramContext {
   id: number;

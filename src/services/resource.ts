@@ -16,7 +16,10 @@ export const getAllResources = async (params?: ResourceParams): Promise<Resource
   try {
     const query = new URLSearchParams();
     if (params?.search) query.append('search', params.search);
-    if (params?.type && params.type !== 'ALL') query.append('type', params.type);
+    if (params?.type && params.type !== 'ALL') {
+      query.append('type', params.type);
+      query.append('resource_type', params.type);
+    }
     if (params?.context && params.context !== 'ALL') query.append('context', params.context);
 
     const response = await api.get(`/resources/?${query.toString()}`);

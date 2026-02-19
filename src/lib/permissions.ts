@@ -1,5 +1,5 @@
 import { User } from '@/services/users';
-import { LucideIcon, LayoutDashboard, Network, BookOpen, HelpCircle, Activity, UserCheck, Database, Tag, Users, Bell, Mail, Settings, Image as ImageIcon, ShieldAlert } from 'lucide-react';
+import { LucideIcon, LayoutDashboard, Network, BookOpen, HelpCircle, Activity, UserCheck, Database, Tag, Users, Bell, Mail, Settings, Image as ImageIcon, ShieldAlert, Terminal } from 'lucide-react';
 
 export type AdminPermission = 'can_manage_content' | 'can_approve_admissions' | 'can_manage_users';
 
@@ -24,6 +24,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { icon: Mail, label: 'Email Queue', href: '/admin/emails' },
   { icon: Activity, label: 'Student Activity', href: '/admin/student-activity' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
+  { icon: Terminal, label: 'API Inspector', href: '/admin/inspector', superadminOnly: true },
   { icon: ImageIcon, label: 'Media Storage', href: '/admin/media', superadminOnly: true },
   { icon: ShieldAlert, label: 'Access Control', href: '/admin/rbac', superadminOnly: true },
 ];
