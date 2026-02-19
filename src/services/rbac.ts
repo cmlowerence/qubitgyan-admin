@@ -19,27 +19,33 @@ export interface UpdateRBACPayload {
 
 export const getAdminsRBAC = async (): Promise<AdminRBACProfile[]> => {
   try {
-    const response = await api.get('/manager/rbac/list_admins/');
-    return Array.isArray(response.data)
-      ? response.data
-      : (response.data.results || []);
+    const endpoints = ['/manager/rbac/list_admins/', '/rbac/list_admins/'];
+    for (const endpoint of endpoints) {
+      try {
+        const response = await api.get(endpoint);
+        return Array.isArray(response.data) ? response.data : response.data.results || [];
+      } catch (error: any) {
+        if (error?.response?.status !== 404) throw error;
+      }
+    }
+    throw new Error('RBAC endpoint not found.');
   } catch (error) {
     throw handleApiError(error);
   }
 };
 
-export const updateAdminRBAC = async (
-  id: number,
-  payload: UpdateRBACPayload
-): Promise<any> => {
+export const updateAdminRBAC = async (id: number, payload: UpdateRBACPayload): Promise<any> => {
   try {
-    const response = await api.patch(
-      `/manager/rbac/${id}/update_permissions/`,
-      {
-        permissions: payload
+    const endpoints = [`/manager/rbac/${id}/update_permissions/`, `/rbac/${id}/update_permissions/`];
+    for (const endpoint of endpoints) {
+      try {
+        const response = await api.patch(endpoint, { permissions: payload });
+        return response.data;
+      } catch (error: any) {
+        if (error?.response?.status !== 404) throw error;
       }
-    );
-    return response.data;
+    }
+    throw new Error('RBAC update endpoint not found.');
   } catch (error) {
     throw handleApiError(error);
   }
