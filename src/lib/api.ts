@@ -1,28 +1,39 @@
-// src/lib/api.ts
 import axios from 'axios';
 
-const RAW_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-const API_URL = RAW_URL.replace(/\/+$/, ''); // Remove trailing slashes
+const normalize = (url: string) => url.replace(/\/+$/, '');
+
+const resolveApiUrl = () => {
+  const configured = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1').trim();
+
+  if (/^https?:\/\//i.test(configured)) {
+    return normalize(configured);
+  }
+
+  if (configured.startsWith('/')) {
+    const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN?.trim();
+    if (backendOrigin) return `${normalize(backendOrigin)}${configured}`;
+
+    if (typeof window !== 'undefined') return `${window.location.origin}${configured}`;
+  }
+
+  return normalize(configured);
+};
 
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: resolveApiUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Attach JWT token to all requests
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Redirect to login on 401 Unauthorized response
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -36,12 +47,16 @@ api.interceptors.response.use(
 );
 
 export const handleApiError = (error: any) => {
-  // console.error('API Error Object:', error);
-  if (error.response) {
-    // Return detailed server message
-    const msg = error.response.data.detail || JSON.stringify(error.response.data);
-    throw new Error(msg || `Server Error (${error.response.status})`);
-  } else {
-    throw new Error(error.message || 'Network Error');
+  const payload = error?.response?.data;
+
+  if (typeof payload === 'string' && payload.toLowerCase().includes('<!doctype html')) {
+    throw new Error('Backend endpoint not found. Check NEXT_PUBLIC_API_URL / NEXT_PUBLIC_BACKEND_ORIGIN configuration.');
   }
+
+  if (error.response) {
+    const msg = payload?.detail || payload?.message || JSON.stringify(payload);
+    throw new Error(msg || `Server Error (${error.response.status})`);
+  }
+
+  throw new Error(error.message || 'Network Error');
 };

@@ -6,6 +6,7 @@ import { Resource } from '@/types/resource';
 import { getAllResources, deleteResource, updateResource } from '@/services/resource';
 import { api } from '@/lib/api';
 import { EditResourceModal } from '@/components/resources/EditResourceModal';
+import { getMediaList, UploadedMedia } from '@/services/media';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
 
 // Import Dumb Components
@@ -17,6 +18,7 @@ export default function GlobalLibraryPage() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [contexts, setContexts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [media, setMedia] = useState<UploadedMedia[]>([]);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
@@ -40,6 +42,7 @@ export default function GlobalLibraryPage() {
       }
     };
     loadContexts();
+    getMediaList().then(setMedia).catch(() => setMedia([]));
   }, []);
 
   useEffect(() => {
@@ -138,6 +141,7 @@ export default function GlobalLibraryPage() {
         resource={editingResource}
         onSave={handleEditSave}
         isLoading={isProcessing}
+        media={media}
       />
 
       <ConfirmModal 

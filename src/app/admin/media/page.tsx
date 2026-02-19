@@ -136,6 +136,9 @@ export default function MediaManagerPage() {
     return <div className="p-8 text-center text-gray-500 animate-pulse">Connecting to Supabase Storage...</div>;
   }
 
+  const usagePercentage = Number(status?.usage_percentage ?? status?.percentage_used ?? 0);
+  const usedBytes = Number(status?.used_bytes ?? 0);
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
       <div className="flex items-center gap-3 mb-6">
@@ -163,18 +166,18 @@ export default function MediaManagerPage() {
               Supabase Bucket Usage
             </div>
             <div className="text-sm font-medium text-gray-500">
-              {status.formatted_used || `${(status.used_bytes / 1024 / 1024).toFixed(2)} MB`} / {status.formatted_limit || '1 GB'}
+              {status.formatted_used || `${(usedBytes / 1024 / 1024).toFixed(2)} MB`} / {status.formatted_limit || '1 GB'}
             </div>
           </div>
           
           <div className="w-full bg-gray-100 rounded-full h-3 mb-2 overflow-hidden">
             <div 
-              className={`h-3 rounded-full transition-all duration-500 ${status.usage_percentage > 85 ? 'bg-red-500' : status.usage_percentage > 60 ? 'bg-amber-400' : 'bg-green-500'}`} 
-              style={{ width: `${Math.min(status.usage_percentage, 100)}%` }}
+              className={`h-3 rounded-full transition-all duration-500 ${usagePercentage > 85 ? 'bg-red-500' : usagePercentage > 60 ? 'bg-amber-400' : 'bg-green-500'}`} 
+              style={{ width: `${Math.min(usagePercentage, 100)}%` }}
             ></div>
           </div>
           
-          {status.usage_percentage > 85 && (
+          {usagePercentage > 85 && (
             <p className="text-xs text-red-500 flex items-center gap-1 mt-2">
               <AlertTriangle className="w-3 h-3" /> Storage is almost full. Super Admins should delete unused media.
             </p>

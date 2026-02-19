@@ -1,12 +1,14 @@
-// src/services/media.ts
 import { api, handleApiError } from '@/lib/api';
 
 export interface StorageStatus {
-  used_bytes: number;
-  limit_bytes: number;
-  usage_percentage: number;
-  formatted_used: string;
-  formatted_limit: string;
+  used_bytes?: number;
+  limit_bytes?: number;
+  usage_percentage?: number;
+  formatted_used?: string;
+  formatted_limit?: string;
+  total_used_mb?: number;
+  remaining_mb?: number;
+  percentage_used?: number;
 }
 
 export interface UploadedMedia {
@@ -29,8 +31,8 @@ export const getStorageStatus = async (): Promise<StorageStatus> => {
 
 export const getMediaList = async (): Promise<UploadedMedia[]> => {
   try {
-    const response = await api.get('/manager/media/');
-    const raw = Array.isArray(response.data) ? response.data : (response.data.results || []);
+    const response = await api.get('/manager/media/library/');
+    const raw = Array.isArray(response.data) ? response.data : response.data.results || [];
     return raw.map((r: any) => ({
       id: r.id,
       file: r.public_url || r.file || '',
@@ -48,24 +50,21 @@ export const uploadMedia = async (file: File, filename?: string, category?: stri
   try {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('name', (filename || file.name));
+    formData.append('name', filename || file.name);
     if (category) formData.append('category', category);
     const response = await api.post('/manager/media/upload/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
 
     const d = response.data || {};
-
     return {
-      id: d.id ?? (d.pk ?? -1),
+      id: d.id ?? d.pk ?? -1,
       file: d.public_url || d.file || '',
       filename: d.name || filename || file.name,
       category: d.category || category || undefined,
       size: d.file_size_bytes ?? (d.size_kb ? Math.round((d.size_kb || 0) * 1024) : file.size),
       created_at: d.uploaded_at || d.created_at || new Date().toISOString(),
-    } as UploadedMedia;
+    };
   } catch (error) {
     throw handleApiError(error);
   }
