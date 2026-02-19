@@ -96,7 +96,7 @@ export default function EmailQueuePage() {
             <div className="p-4 bg-amber-50 text-amber-600 rounded-lg"><Clock className="w-6 h-6"/></div>
             <div>
               <p className="text-sm font-medium text-gray-500">Pending</p>
-              <p className="text-3xl font-bold text-gray-700">{status.pending_count || 'N/A'}</p>
+              <p className="text-3xl font-bold text-gray-700">{status.pending_emails || 'N/A'}</p>
             </div>
           </div>
           
@@ -104,7 +104,7 @@ export default function EmailQueuePage() {
             <div className="p-4 bg-green-50 text-green-600 rounded-lg"><CheckCircle className="w-6 h-6"/></div>
             <div>
               <p className="text-sm font-medium text-gray-500">Sent</p>
-              <p className="text-3xl font-bold text-gray-700">{status.sent_count || 'N/A'}</p>
+              <p className="text-3xl font-bold text-gray-700">{status.total_sent || 'N/A'}</p>
             </div>
           </div>
 
@@ -141,14 +141,14 @@ export default function EmailQueuePage() {
           </div>
           <button
             onClick={handleDispatch}
-            disabled={dispatching || (status?.pending_count === 0)}
+            disabled={dispatching || (status?.pending_emails === 0)}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {dispatching ? 'Sending...' : 'Dispatch Batch'}
           </button>
         </div>
         
-        {status?.pending_count === 0 && (
+        {status?.pending_emails === 0 && (
           <p className="text-sm text-green-600 font-medium mt-4">
             🎉 The queue is currently empty. All caught up!
           </p>
