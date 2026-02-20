@@ -39,7 +39,7 @@ export default function QuizBuilderPage() {
     const init = async () => {
       try {
         setLoading(true);
-        const resources = await getAllResources({ type: 'QUIZ' });
+        const resources = await getAllResources();
         setAvailableResources(resources);
 
         if (quizId) {

@@ -19,7 +19,7 @@ export interface UpdateRBACPayload {
 
 export const getAdminsRBAC = async (): Promise<AdminRBACProfile[]> => {
   try {
-    const endpoints = ['/manager/rbac/list_admins/', '/rbac/list_admins/'];
+    const endpoints = ['/manager/rbac/'];
     for (const endpoint of endpoints) {
       try {
         const response = await api.get(endpoint);

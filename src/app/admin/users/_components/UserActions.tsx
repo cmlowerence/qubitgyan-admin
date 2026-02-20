@@ -25,7 +25,6 @@ export default function UserActions({
   const isSelf = currentUser?.id === user.id;
   const hasRankAuthority = currentUser?.is_superuser || (currentUser?.can_manage_users && !user.is_staff);
 
-  // SCENARIO 1: IT IS ME
   if (isSelf) {
     return (
       <div className="flex items-center justify-end gap-1.5">

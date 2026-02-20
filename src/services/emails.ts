@@ -5,6 +5,7 @@ export interface QueueStatus {
   total_sent: number;
   failed_count?: number;
   total_in_queue?: number;
+  raw_data: any; 
 }
 
 export interface DispatchResponse {
@@ -37,22 +38,26 @@ const tryPost = async (urls: string[], payload: any) => {
 
 export const getQueueStatus = async (): Promise<QueueStatus> => {
   try {
-    const response = await tryGet(['/manager/emails/queue_status/', '/emails/queue_status/']);
+    const response = await tryGet(['/manager/emails/queue_status/']);
     const d = response.data || {};
+    console.log('Email Queue Status Response:', d);
+
     return {
-      pending_emails: d.pending_emails ?? d.pending_count ?? 0,
-      total_sent: d.total_sent ?? d.sent_count ?? 0,
-      failed_count: d.failed_count,
+      pending_emails: d.pending_emails.count ?? d.pending_count ?? 0,
+      total_sent: d.sent_emails.count ?? d.sent_count ?? 0,
+      failed_count: d.failed_emails.count ?? d.failed_count ?? 0,
       total_in_queue: d.total_in_queue,
+      raw_data: d,
     };
   } catch (error) {
     throw handleApiError(error);
   }
 };
 
+
 export const dispatchEmailBatch = async (limit: number = 20, maxSeconds: number = 20): Promise<DispatchResponse> => {
   try {
-    const response = await tryPost(['/manager/emails/dispatch_batch/', '/emails/dispatch_batch/', '/dispatch_batch/'], {
+    const response = await tryPost(['/manager/emails/flush/', '/emails/dispatch_batch/', '/dispatch_batch/'], {
       limit,
       max_seconds: maxSeconds,
     });

@@ -96,7 +96,7 @@ export default function EmailQueuePage() {
             <div className="p-4 bg-amber-50 text-amber-600 rounded-lg"><Clock className="w-6 h-6"/></div>
             <div>
               <p className="text-sm font-medium text-gray-500">Pending</p>
-              <p className="text-3xl font-bold text-gray-700">{status.pending_emails || 'N/A'}</p>
+              <p className="text-3xl font-bold text-gray-700">{status.pending_emails ?? 'N/A'}</p>
             </div>
           </div>
           
@@ -104,7 +104,7 @@ export default function EmailQueuePage() {
             <div className="p-4 bg-green-50 text-green-600 rounded-lg"><CheckCircle className="w-6 h-6"/></div>
             <div>
               <p className="text-sm font-medium text-gray-500">Sent</p>
-              <p className="text-3xl font-bold text-gray-700">{status.total_sent || 'N/A'}</p>
+              <p className="text-3xl font-bold text-gray-700">{status.total_sent ?? 'N/A'}</p>
             </div>
           </div>
 
@@ -112,7 +112,7 @@ export default function EmailQueuePage() {
             <div className="p-4 bg-red-50 text-red-600 rounded-lg"><AlertCircle className="w-6 h-6"/></div>
             <div>
               <p className="text-sm font-medium text-gray-500">Failed</p>
-              <p className="text-3xl font-bold text-gray-700">{status.failed_count || 'N/A'}</p>
+              <p className="text-3xl font-bold text-gray-700">{status.failed_count ?? 'N/A'}</p>
             </div>
           </div>
         </div>

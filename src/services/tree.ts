@@ -10,7 +10,7 @@ const unwrapList = (data: any) => {
 
 export const getKnowledgeTree = async (depth: TreeDepth = 1): Promise<KnowledgeNode[]> => {
   try {
-    const response = await api.get('/tree/', { params: { depth } });
+    const response = await api.get('/nodes/', { params: { depth } });
     return unwrapList(response.data);
   } catch (error) {
     throw handleApiError(error);
