@@ -5,7 +5,7 @@ export interface AdminRBACProfile {
   username: string;
   email: string;
   is_superuser: boolean;
-  avatar: string | null;
+  avatar_url: string | null;
   can_manage_users: boolean;
   can_manage_content: boolean;
   can_approve_admissions: boolean;

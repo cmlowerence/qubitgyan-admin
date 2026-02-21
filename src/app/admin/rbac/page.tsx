@@ -22,10 +22,9 @@ export default function RBACManagerPage() {
       setLoading(true);
       setError('');
       const data = await getAdminsRBAC();
-
+      // console.log('Raw RBAC data:', data);
       // Normalize the incoming data to enforce strict booleans
       const normalizedAdmins = data.map((admin: any) => {
-        // Helper function to safely parse anything into a true boolean
         const toBool = (val: any) => {
           if (typeof val === 'boolean') return val;
           if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
@@ -35,8 +34,6 @@ export default function RBACManagerPage() {
 
         return {
           ...admin,
-          // We check `admin.permissions?.` just in case the backend nests them on GET, 
-          // falling back to `admin.` if they are flat properties.
           can_manage_content: toBool(admin.permissions?.can_manage_content ?? admin.can_manage_content),
           can_approve_admissions: toBool(admin.permissions?.can_approve_admissions ?? admin.can_approve_admissions),
           can_manage_users: toBool(admin.permissions?.can_manage_users ?? admin.can_manage_users),
@@ -75,7 +72,7 @@ export default function RBACManagerPage() {
           admin.id === id
             ? {
                 ...admin,
-                avatar: u.avatar_url ?? admin.avatar,
+                avatar: u.avatar_url ?? admin.avatar_url,
                 can_manage_content: toBool(u.can_manage_content),
                 can_approve_admissions: toBool(u.can_approve_admissions),
                 can_manage_users: toBool(u.can_manage_users),
@@ -143,7 +140,7 @@ export default function RBACManagerPage() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0">
-                      {admin.avatar ? <img src={admin.avatar} alt={admin.username} className="w-full h-full object-cover rounded-full" /> : admin.username[0].toUpperCase()}
+                      {admin.avatar_url ? <img src={admin.avatar_url} alt={admin.username} className="w-full h-full object-cover rounded-full" /> : admin.username[0].toUpperCase()}
                     </div>
                     <div>
                       <p className="font-semibold text-gray-800">{admin.username}</p>
@@ -218,7 +215,7 @@ export default function RBACManagerPage() {
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold shrink-0">
-                          {admin.avatar ? <img src={admin.avatar} alt={admin.username} className="w-full h-full object-cover rounded-full" /> : admin.username[0].toUpperCase()}
+                          {admin.avatar_url ? <img src={admin.avatar_url} alt={admin.username} className="w-full h-full object-cover rounded-full" /> : admin.username[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-gray-800 truncate">{admin.username}</p>

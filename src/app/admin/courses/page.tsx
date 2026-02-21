@@ -1,20 +1,15 @@
-// src/app/admin/courses/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { getManagerCourses, updateCourse, deleteCourse, Course } from '@/services/courses';
-import { BookOpen, Edit, Trash2, Globe, EyeOff, Plus } from 'lucide-react';
-import Link from 'next/link';
-import CreateCourseModal from './_components/CreateCourseModal';
+import { BookOpen, Edit, Trash2, Globe, EyeOff, Plus, MoreVertical } from 'lucide-react';
+import CourseModal from '@/app/admin/courses/_components/CreateCourseModal';
 
 export default function CourseManagerPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  useEffect(() => {
-    loadCourses();
-  }, []);
 
   const loadCourses = async () => {
     try {
@@ -22,113 +17,115 @@ export default function CourseManagerPage() {
       const data = await getManagerCourses();
       setCourses(data);
     } catch (error) {
-      // console.error("Failed to load courses", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => { loadCourses(); }, []);
+
   const togglePublish = async (course: Course) => {
     try {
       await updateCourse(course.id, { is_published: !course.is_published });
-      loadCourses(); // Refresh the list
+      loadCourses();
     } catch (error: any) {
-      alert(`Failed to update status: ${error.message}`);
+      alert(`Error: ${error.message}`);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this course wrapper? The underlying nodes will remain intact.")) return;
+    if (!confirm("Delete this course wrapper? Linked content will not be deleted.")) return;
     try {
       await deleteCourse(id);
       loadCourses();
     } catch (error: any) {
-      alert(`Failed to delete course: ${error.message}`);
+      alert(`Error: ${error.message}`);
     }
   };
 
-  if (loading) {
-    return <div className="p-8 text-center text-gray-500 animate-pulse">Loading Course Catalog...</div>;
-  }
+  const openEdit = (course: Course) => {
+    setSelectedCourse(course);
+    setIsModalOpen(true);
+  };
+
+  const openCreate = () => {
+    setSelectedCourse(null);
+    setIsModalOpen(true);
+  };
+
+  if (loading) return <div className="p-8 text-center animate-pulse text-gray-400">Syncing Course Catalog...</div>;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Course Builder</h1>
-          <p className="text-gray-500 text-sm">Package your knowledge nodes into publishable courses.</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Course Builder</h1>
+          <p className="text-gray-500 font-medium">Map Knowledge Nodes to student-facing courses.</p>
         </div>
         <button 
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+          onClick={openCreate}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold shadow-xl shadow-blue-100 transition-all flex items-center justify-center gap-2 active:scale-95"
         >
-        <Plus className="w-4 h-4" /> Create Course
+          <Plus className="w-5 h-5" /> New Course
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.length === 0 ? (
-          <div className="col-span-full p-12 text-center bg-white rounded-xl border border-dashed border-gray-300">
-            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="text-lg font-medium text-gray-900">No courses yet</h3>
-            <p className="text-gray-500 mt-1">Start by wrapping a Root Node into a new course.</p>
+          <div className="col-span-full py-20 text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+            <BookOpen className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-700">Empty Catalog</h3>
+            <p className="text-gray-400">Click the button above to start your first course.</p>
           </div>
         ) : (
           courses.map((course) => (
-            <div key={course.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-              {/* Thumbnail Placeholder */}
-              <div className="h-40 bg-gray-100 relative">
+            <div key={course.id} className="group bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-gray-200/50 transition-all overflow-hidden flex flex-col border-b-4 border-b-gray-50">
+              {/* Thumbnail Area */}
+              <div className="aspect-[16/9] bg-gray-100 relative overflow-hidden">
                 {course.thumbnail_url ? (
-                  <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                  <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
-                  <div className="flex items-center justify-center w-full h-full text-gray-400">
-                    <BookOpen className="w-8 h-8 opacity-50" />
-                  </div>
+                  <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-12 h-12 text-gray-300" /></div>
                 )}
-                <div className="absolute top-3 right-3">
+                <div className="absolute top-4 right-4">
                   {course.is_published ? (
-                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-sm"><Globe className="w-3 h-3"/> Published</span>
+                    <span className="bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-emerald-200/50 ring-2 ring-white/20"><Globe className="w-3 h-3"/> Online</span>
                   ) : (
-                    <span className="bg-gray-800 text-white px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-sm"><EyeOff className="w-3 h-3"/> Draft</span>
+                    <span className="bg-gray-900 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-black/20 ring-2 ring-white/10"><EyeOff className="w-3 h-3"/> Draft</span>
                   )}
                 </div>
               </div>
 
-              {/* Card Body */}
-              <div className="p-5 flex-1 flex flex-col">
-                <h3 className="font-bold text-lg text-gray-900 mb-1 line-clamp-1">{course.title}</h3>
-                <p className="text-sm text-gray-500 mb-3 line-clamp-2 flex-1">{course.description}</p>
-                
-                <div className="text-xs text-gray-400 bg-gray-50 p-2 rounded-md mb-4 border border-gray-100">
-                  <span className="font-semibold text-gray-600">Root Node:</span> {course.root_node_name || 'Attached Node ID: ' + course.root_node}
+              {/* Content Area */}
+              <div className="p-6 flex-1 flex flex-col">
+                <div className="mb-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 self-start px-2 py-1 rounded-md">
+                   Root: {course.root_node_name}
                 </div>
+                <h3 className="text-xl font-extrabold text-gray-900 mb-2 line-clamp-1">{course.title}</h3>
+                <p className="text-sm text-gray-500 font-medium line-clamp-2 mb-6 leading-relaxed flex-1">{course.description}</p>
 
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-                  <button 
+                <div className="flex items-center gap-2 pt-4 border-t border-gray-50">
+                   <button 
                     onClick={() => togglePublish(course)}
-                    className={`text-sm font-medium transition-colors ${course.is_published ? 'text-amber-600 hover:text-amber-700' : 'text-green-600 hover:text-green-700'}`}
+                    className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${course.is_published ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
                   >
-                    {course.is_published ? 'Unpublish' : 'Publish'}
+                    {course.is_published ? 'Move to Drafts' : 'Make it Online'}
                   </button>
-                  <div className="flex items-center gap-3">
-                    <button className="text-gray-400 hover:text-blue-600 transition-colors">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(course.id)} className="text-gray-400 hover:text-red-600 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button onClick={() => openEdit(course)} className="p-3 bg-gray-50 text-gray-500 hover:text-blue-600 rounded-xl transition-colors"><Edit className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(course.id)} className="p-3 bg-gray-50 text-gray-500 hover:text-rose-600 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             </div>
           ))
         )}
       </div>
-      <CreateCourseModal 
+
+      <CourseModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onSuccess={loadCourses} 
+        onSuccess={loadCourses}
+        initialData={selectedCourse}
       />
     </div>
   );

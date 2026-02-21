@@ -1,111 +1,152 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, BookOpen, Link as LinkIcon } from 'lucide-react';
-import { createCourse } from '@/services/courses';
+import { X, BookOpen, Link as LinkIcon, Save, Loader2 } from 'lucide-react';
+import { createCourse, updateCourse, Course } from '@/services/courses';
 import { getKnowledgeTree } from '@/services/tree';
 import { KnowledgeNode } from '@/types/tree';
-import { getMediaList, UploadedMedia } from '@/services/media';
-import { MediaUrlPicker } from '@/components/media/MediaUrlPicker';
+import SupabaseMediaPicker from '@/components/media/SupabaseMediaPicker';
 
-interface CreateCourseModalProps {
+interface CourseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialData?: Course | null; // If present, we are in Edit mode
 }
 
-export default function CreateCourseModal({ isOpen, onClose, onSuccess }: CreateCourseModalProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [thumbnailUrl, setThumbnailUrl] = useState('');
-  const [rootNodeId, setRootNodeId] = useState<string>('');
-
+export default function CourseModal({ isOpen, onClose, onSuccess, initialData }: CourseModalProps) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    thumbnail_url: '',
+    root_node: '',
+  });
+  
   const [rootNodes, setRootNodes] = useState<KnowledgeNode[]>([]);
-  const [media, setMedia] = useState<UploadedMedia[]>([]);
-  const [loadingNodes, setLoadingNodes] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const isEdit = !!initialData;
 
   useEffect(() => {
     if (isOpen) {
       loadRootNodes();
-      getMediaList().then(setMedia).catch(() => setMedia([]));
-    } else {
-      setTitle('');
-      setDescription('');
-      setThumbnailUrl('');
-      setRootNodeId('');
-      setError('');
+      if (initialData) {
+        setFormData({
+          title: initialData.title,
+          description: initialData.description,
+          thumbnail_url: initialData.thumbnail_url || '',
+          root_node: initialData.root_node.toString(),
+        });
+      } else {
+        setFormData({ title: '', description: '', thumbnail_url: '', root_node: '' });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   const loadRootNodes = async () => {
     try {
-      setLoadingNodes(true);
-      const nodes = await getKnowledgeTree(1);
+      const nodes = await getKnowledgeTree(1); // Assuming depth 1 gets the root domains
       setRootNodes(nodes);
-    } finally {
-      setLoadingNodes(false);
-    }
+    } catch (e) { console.error(e); }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!rootNodeId) return setError('You must select a Root Node to wrap this course around.');
-
-    setSubmitting(true);
+    setLoading(true);
     setError('');
 
+    const payload = {
+      ...formData,
+      root_node: Number(formData.root_node),
+      thumbnail_url: formData.thumbnail_url || undefined
+    };
+
     try {
-      await createCourse({ title, description, thumbnail_url: thumbnailUrl || undefined, root_node: Number(rootNodeId), is_published: false });
+      if (isEdit && initialData) {
+        await updateCourse(initialData.id, payload);
+      } else {
+        await createCourse({ ...payload, is_published: false });
+      }
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to create course.');
+      setError(err.message || 'Action failed.');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><BookOpen className="w-5 h-5 text-blue-600" /> Create New Course</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-900/40 backdrop-blur-sm p-0 sm:p-4">
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in slide-in-from-bottom duration-300 sm:duration-200">
+        <div className="flex items-center justify-between p-5 border-b border-gray-50">
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            {isEdit ? 'Edit Course' : 'Create New Course'}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-medium">{error}</div>}
+        <form onSubmit={handleSubmit} className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
+          {error && <div className="p-3 bg-rose-50 text-rose-600 rounded-xl text-sm border border-rose-100">{error}</div>}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Course Title</label>
-            <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-4 py-2 border border-gray-200 rounded-lg" />
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Title</label>
+            <input 
+              type="text" required 
+              value={formData.title} 
+              onChange={(e) => setFormData({...formData, title: e.target.value})} 
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+              placeholder="e.g. TGT Non-Medical Physics"
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea required rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-2 border border-gray-200 rounded-lg resize-none" />
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
+            <textarea 
+              required rows={3} 
+              value={formData.description} 
+              onChange={(e) => setFormData({...formData, description: e.target.value})} 
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none" 
+              placeholder="Summarize the course goals..."
+            />
           </div>
 
-          <MediaUrlPicker value={thumbnailUrl} onChange={setThumbnailUrl} media={media} label="Thumbnail URL / Pick from storage" placeholder="https://..." />
+          <SupabaseMediaPicker 
+            value={formData.thumbnail_url} 
+            onChange={(url) => setFormData({...formData, thumbnail_url: url})} 
+          />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Attach Root Knowledge Node</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Root Knowledge Node</label>
             <div className="relative">
-              <LinkIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
-              <select required value={rootNodeId} onChange={(e) => setRootNodeId(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg appearance-none bg-white" disabled={loadingNodes}>
-                <option value="" disabled>{loadingNodes ? 'Loading nodes...' : 'Select a top-level folder...'}</option>
-                {rootNodes.map((node) => <option key={node.id} value={node.id}>{node.name} (Type: {node.node_type})</option>)}
+              <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+              <select 
+                required 
+                value={formData.root_node} 
+                onChange={(e) => setFormData({...formData, root_node: e.target.value})} 
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500 transition-all"
+              >
+                <option value="" disabled>Select a Top-Level Folder</option>
+                {rootNodes.map((node) => (
+                  <option key={node.id} value={node.id}>{node.name} ({node.node_type})</option>
+                ))}
               </select>
             </div>
           </div>
 
-          <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-50 font-medium rounded-lg">Cancel</button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50">{submitting ? 'Creating...' : 'Create Draft'}</button>
+          <div className="pt-4 flex flex-col sm:flex-row gap-3">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-3 text-gray-600 font-bold hover:bg-gray-50 rounded-xl transition-colors order-2 sm:order-1">Cancel</button>
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 disabled:opacity-50 transition-all flex items-center justify-center gap-2 order-1 sm:order-2"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              {isEdit ? 'Update Course' : 'Create Course'}
+            </button>
           </div>
         </form>
       </div>

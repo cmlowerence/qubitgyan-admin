@@ -77,3 +77,11 @@ export const deleteMedia = async (id: number): Promise<void> => {
     throw handleApiError(error);
   }
 };
+
+export const bulkDeleteMedia = async (ids: number[]): Promise<void> => {
+  try {
+    await api.post('/manager/media/bulk_delete/', { ids });
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};

@@ -2,132 +2,148 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FolderTree, AlertCircle, RefreshCw, Plus } from 'lucide-react';
-
-import { getKnowledgeTree, createKnowledgeNode, TreeDepth } from '@/services/tree';
-import { KnowledgeNode, CreateNodePayload } from '@/types/tree';
-
+import { FolderTree, RefreshCw, Plus, ChevronRight, LayoutGrid, Settings2 } from 'lucide-react';
+import { getKnowledgeTree, createKnowledgeNode, updateKnowledgeNode, deleteKnowledgeNode, TreeDepth } from '@/services/tree';
+import { KnowledgeNode, CreateNodePayload, UpdateNodePayload } from '@/types/tree';
 import LoadingScreen from '@/components/ui/loading-screen';
 import CreateNodeModal from '@/components/tree/CreateNodeModal';
+import EditNodeModal from '@/components/tree/EditNodeModal';
 
 export default function TreeManagementPage() {
   const router = useRouter();
   const [nodes, setNodes] = useState<KnowledgeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [depth, setDepth] = useState<TreeDepth>(1);
-
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    loadTreeData(depth);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadTreeData();
   }, [depth]);
 
-  const loadTreeData = async (selectedDepth: TreeDepth = depth) => {
+  const loadTreeData = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      setError(null);
-      const data = await getKnowledgeTree(selectedDepth);
-      setNodes(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load knowledge tree');
-      setNodes([]);
+      const data = await getKnowledgeTree(depth);
+      setNodes(data);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCreateNode = async (payload: CreateNodePayload) => {
+    setIsProcessing(true);
     try {
-      setIsCreating(true);
       await createKnowledgeNode(payload);
       await loadTreeData();
       setIsCreateModalOpen(false);
-    } catch (err: any) {
-      alert(`Failed to create node: ${err.message}`);
-    } finally {
-      setIsCreating(false);
-    }
+    } finally { setIsProcessing(false); }
   };
 
-  if (isLoading) return <LoadingScreen message="Loading Knowledge Tree..." />;
+  const handleUpdateNode = async (id: number, payload: UpdateNodePayload) => {
+    setIsProcessing(true);
+    try {
+      await updateKnowledgeNode(id, payload);
+      await loadTreeData();
+      setIsEditModalOpen(false);
+    } finally { setIsProcessing(false); }
+  };
+
+  const handleDeleteNode = async (id: number) => {
+    if (!confirm("Delete this domain? This will remove all subjects and topics inside it!")) return;
+    setIsProcessing(true);
+    try {
+      await deleteKnowledgeNode(id);
+      await loadTreeData();
+      setIsEditModalOpen(false);
+    } finally { setIsProcessing(false); }
+  };
+
+  const openEdit = (e: React.MouseEvent, node: KnowledgeNode) => {
+    e.stopPropagation();
+    setSelectedNode(node);
+    setIsEditModalOpen(true);
+  };
+
+  if (isLoading) return <LoadingScreen message="Loading Domains..." />;
 
   return (
-    <div className="p-4 md:p-6 space-y-5 pb-20">
-      <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
-            <FolderTree className="w-6 h-6 text-blue-600" />
-            Knowledge Tree
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <LayoutGrid className="w-8 h-8 text-indigo-600" /> Knowledge Tree
           </h1>
-          <p className="text-sm text-slate-500">Fetch by depth to reduce backend load and keep the UI fast.</p>
+          <p className="text-slate-500 font-medium">Manage top-level domains and content hierarchy.</p>
         </div>
 
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm w-full md:w-auto">
           <select
             value={depth}
             onChange={(e) => setDepth((e.target.value === 'full' ? 'full' : Number(e.target.value)) as TreeDepth)}
-            className="px-3 py-2 border border-slate-200 rounded-md bg-white text-sm"
+            className="flex-1 md:flex-none px-4 py-2 bg-slate-50 border-none rounded-xl text-sm font-bold text-slate-700 outline-none"
           >
-            <option value={1}>Depth 1</option>
-            <option value={2}>Depth 2</option>
-            <option value={3}>Depth 3</option>
-            <option value="full">Full</option>
+            <option value={1}>View Domains</option>
+            <option value={2}>View Subjects</option>
+            <option value="full">Full Tree</option>
           </select>
-          <button onClick={() => loadTreeData()} className="px-3 py-2 text-sm bg-white border border-slate-200 rounded-md">
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <button onClick={loadTreeData} className="p-2 hover:bg-slate-50 rounded-lg text-slate-400"><RefreshCw className="w-5 h-5" /></button>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-95"
           >
-            <Plus className="w-4 h-4" /> Add Domain
+            <Plus className="w-5 h-5" /> New Domain
           </button>
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg flex items-start gap-3 border border-red-200">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-semibold">Failed to load tree</p>
-            <p>{error}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden min-h-[300px]">
-        <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-          <h2 className="font-semibold text-slate-700 text-sm">Domains</h2>
-        </div>
-        <div className="p-4 space-y-2">
-          {nodes.length === 0 ? (
-            <p className="text-slate-400 text-sm">No domains found.</p>
-          ) : (
-            nodes.map((node) => (
-              <button
-                key={node.id}
-                onClick={() => router.push(`/admin/tree/${node.id}`)}
-                className="w-full text-left p-3 border border-slate-100 rounded-lg hover:bg-slate-50 flex items-center justify-between"
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {nodes.map((node) => (
+          <div
+            key={node.id}
+            onClick={() => router.push(`/admin/tree/${node.id}`)}
+            className="group relative bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 transition-all text-left flex flex-col gap-4 border-b-4 border-b-slate-200 cursor-pointer"
+          >
+            <div className="flex justify-between items-start">
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                <FolderTree className="w-6 h-6" />
+              </div>
+              <button 
+                onClick={(e) => openEdit(e, node)}
+                className="p-2 bg-slate-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-colors"
               >
-                <div>
-                  <p className="font-medium text-slate-700 text-sm">{node.name}</p>
-                  <p className="text-xs text-slate-400">{node.resource_count || 0} resources</p>
-                </div>
-                <span className="text-[10px] font-semibold uppercase bg-blue-50 text-blue-600 px-2 py-1 rounded">{node.node_type}</span>
+                <Settings2 className="w-5 h-5" />
               </button>
-            ))
-          )}
-        </div>
+            </div>
+            <div>
+              <h3 className="text-xl font-extrabold text-slate-800">{node.name}</h3>
+              <p className="text-sm font-medium text-slate-400 mt-1 uppercase tracking-tighter">{node.node_type} • {node.resource_count || 0} items</p>
+            </div>
+            <div className="mt-auto pt-4 flex items-center gap-2 text-indigo-600 font-bold text-xs">
+              Explore Sub-Items <ChevronRight className="w-4 h-4" />
+            </div>
+          </div>
+        ))}
       </div>
 
       <CreateNodeModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateNode}
-        isLoading={isCreating}
+        isLoading={isProcessing}
+      />
+
+      <EditNodeModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleUpdateNode}
+        onDelete={handleDeleteNode}
+        node={selectedNode}
+        isLoading={isProcessing}
       />
     </div>
   );

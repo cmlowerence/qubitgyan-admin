@@ -2,13 +2,13 @@
 import { api, handleApiError } from '@/lib/api';
 
 export interface QuizOption {
-  id?: number; // Optional for creation
+  id?: number; // Optional: Backend uses this to identify existing options
   text: string;
   is_correct: boolean;
 }
 
 export interface QuizQuestion {
-  id?: number; // Optional for creation
+  id?: number; // Optional: Backend uses this to identify existing questions
   text: string;
   image_url?: string | null;
   marks_positive: number;
@@ -19,27 +19,29 @@ export interface QuizQuestion {
 
 export interface Quiz {
   id: number;
-  resource: number;          // The ID of the Resource (Type: QUIZ) this belongs to
-  resource_title?: string;   // Read-only from backend
+  resource: number;           // The ID of the Resource (Type: QUIZ)
+  resource_title?: string;    // Read-only field from backend
   passing_score_percentage: number;
   time_limit_minutes: number;
   questions: QuizQuestion[];
 }
 
-// Payload for creating/updating a Quiz (Deeply Nested JSON)
 export interface QuizPayload {
   resource: number;
   passing_score_percentage: number;
   time_limit_minutes: number;
-  questions: Omit<QuizQuestion, 'id'>[]; // ID is omitted for brand new questions
+  // Send the full question objects. 
+  // For new ones, id is undefined. For existing, id is a number.
+  questions: QuizQuestion[]; 
 }
 
 /**
- * Fetch all quizzes (Manager/Admin view with correct answers included)
+ * Fetch all quizzes for Management
  */
 export const getManagerQuizzes = async (): Promise<Quiz[]> => {
   try {
     const response = await api.get('/manager/quizzes/');
+    // Handle both direct arrays and paginated results
     return Array.isArray(response.data) ? response.data : (response.data.results || []);
   } catch (error) {
     throw handleApiError(error);
@@ -59,7 +61,7 @@ export const getQuiz = async (id: number): Promise<Quiz> => {
 };
 
 /**
- * Create a new Quiz with all its nested questions and options
+ * Create a new Quiz with nested questions and options
  */
 export const createQuiz = async (payload: QuizPayload): Promise<Quiz> => {
   try {
@@ -71,7 +73,7 @@ export const createQuiz = async (payload: QuizPayload): Promise<Quiz> => {
 };
 
 /**
- * Update an existing Quiz (replaces nested data based on your DRF setup)
+ * Update an existing Quiz
  */
 export const updateQuiz = async (id: number, payload: Partial<QuizPayload>): Promise<Quiz> => {
   try {

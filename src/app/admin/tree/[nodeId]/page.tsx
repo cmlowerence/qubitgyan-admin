@@ -1,148 +1,123 @@
-// src/app/admin/tree/[nodeId]/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { BookOpen } from 'lucide-react';
-
-// Services & Types
-import { 
-  getKnowledgeNode, 
-  createKnowledgeNode, 
-  updateKnowledgeNode, 
-  deleteKnowledgeNode 
-} from '@/services/tree';
+import { ArrowLeft, BookOpen, LayoutGrid, Settings2, Plus } from 'lucide-react';
+import { getKnowledgeNode, createKnowledgeNode, updateKnowledgeNode, deleteKnowledgeNode } from '@/services/tree';
 import { KnowledgeNode, CreateNodePayload, UpdateNodePayload } from '@/types/tree';
-
-// Components
 import LoadingScreen from '@/components/ui/loading-screen';
 import CreateNodeModal from '@/components/tree/CreateNodeModal';
 import EditNodeModal from '@/components/tree/EditNodeModal';
-import { ResourceManager } from '@/components/resources/ResourceManager'; 
-
-// Dumb Components
-import NodeHeader from './_components/NodeHeader';
+import { ResourceManager } from '@/components/resources/ResourceManager';
 import SubNodeList from './_components/SubNodeList';
-import ErrorState from './_components/ErrorState';
 
 export default function NodeDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  
-  const nodeId = params?.nodeId ? parseInt(params.nodeId as string) : 0;
+  const nodeId = parseInt(params?.nodeId as string);
 
   const [currentNode, setCurrentNode] = useState<KnowledgeNode | null>(null);
   const [children, setChildren] = useState<KnowledgeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingNode, setEditingNode] = useState<KnowledgeNode | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (nodeId) {
-      loadNodeData();
-    }
+    if (nodeId) loadNodeData();
   }, [nodeId]);
 
   const loadNodeData = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      setError(null);
       const data = await getKnowledgeNode(nodeId, 2);
       setCurrentNode(data);
-      setChildren(Array.isArray(data.children) ? data.children : []);
-    } catch (err: any) {
-      // console.error("Fetch Error:", err);
-      setError(err.message || 'Failed to load node details');
-
+      setChildren(data.children || []);
+    } catch (err) {
+      router.push('/admin/tree');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCreateNode = async (payload: CreateNodePayload) => {
+  const handleCreate = async (payload: CreateNodePayload) => {
+    setIsProcessing(true);
     try {
-      setIsProcessing(true);
       await createKnowledgeNode(payload);
-      await loadNodeData(); 
-      setIsCreateModalOpen(false);
-    } catch (err: any) {
-      alert(`Failed to create: ${err.message}`);
-    } finally {
-      setIsProcessing(false);
-    }
+      await loadNodeData();
+      setIsCreateOpen(false);
+    } finally { setIsProcessing(false); }
   };
 
-  const handleUpdateNode = async (id: number, payload: UpdateNodePayload) => {
+  const handleUpdate = async (id: number, payload: UpdateNodePayload) => {
+    setIsProcessing(true);
     try {
-      setIsProcessing(true);
       await updateKnowledgeNode(id, payload);
       await loadNodeData();
-      setIsEditModalOpen(false);
-      setEditingNode(null);
-    } catch (err: any) {
-      alert(`Failed to update: ${err.message}`);
-    } finally {
-      setIsProcessing(false);
-    }
+      setIsEditOpen(false);
+    } finally { setIsProcessing(false); }
   };
 
-  const handleDeleteNode = async (id: number) => {
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this node? All nested children and resources will be removed!")) return;
+    setIsProcessing(true);
     try {
-      setIsProcessing(true);
       await deleteKnowledgeNode(id);
-
-      if (currentNode && id === currentNode.id) {
-        currentNode.parent 
-          ? router.push(`/admin/tree/${currentNode.parent}`) 
-          : router.push('/admin/tree');
-        return;
-      }
-
-      await loadNodeData();
-      setIsEditModalOpen(false);
-      setEditingNode(null);
-    } catch (err: any) {
-      alert(`Failed to delete: ${err.message}`);
-    } finally {
-      setIsProcessing(false);
-    }
+      // Redirect to parent after deletion
+      currentNode?.parent ? router.push(`/admin/tree/${currentNode.parent}`) : router.push('/admin/tree');
+    } finally { setIsProcessing(false); }
   };
 
-  const openEditModal = (e: React.MouseEvent, node: KnowledgeNode) => {
-    e.stopPropagation();
-    setEditingNode(node);
-    setIsEditModalOpen(true);
-  };
-
-  if (isLoading) return <LoadingScreen message="Accessing Knowledge..." />;
-
-  if (error) {
-    return <ErrorState error={error} onBack={() => router.back()} />;
-  }
+  if (isLoading) return <LoadingScreen message="Fetching hierarchy..." />;
 
   const isTopic = currentNode?.node_type === 'TOPIC';
 
   return (
-    <div className="p-4 md:p-6 space-y-6 pb-24 max-w-7xl mx-auto animate-in fade-in duration-500">
-      
-      <NodeHeader 
-        node={currentNode}
-        isTopic={isTopic}
-        onBack={() => router.back()}
-        onEdit={(e) => currentNode && openEditModal(e, currentNode)}
-        onAddSubItem={() => setIsCreateModalOpen(true)}
-      />
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 pb-32 animate-in fade-in">
+      {/* --- Breadcrumb / Back Navigation --- */}
+      <button 
+        onClick={() => currentNode?.parent ? router.push(`/admin/tree/${currentNode.parent}`) : router.push('/admin/tree')}
+        className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-indigo-600 transition-colors group"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        Back to {currentNode?.node_type === 'SUBJECT' ? 'Domain' : 'Parent'}
+      </button>
 
-      <div className="space-y-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className={`p-3 rounded-2xl ${isTopic ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'}`}>
+            <LayoutGrid className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">{currentNode?.name}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">{currentNode?.node_type}</span>
+              <span className="text-slate-300 text-xs">•</span>
+              <span className="text-xs font-bold text-slate-400">ID: #{currentNode?.id}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2 w-full md:w-auto">
+          <button onClick={() => setIsEditOpen(true)} className="p-3 bg-slate-50 text-slate-500 hover:bg-white hover:text-indigo-600 border border-transparent hover:border-slate-100 rounded-2xl transition-all shadow-sm">
+            <Settings2 className="w-5 h-5" />
+          </button>
+          {!isTopic && (
+            <button 
+              onClick={() => setIsCreateOpen(true)}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all"
+            >
+              <Plus className="w-5 h-5" /> Add Sub-Item
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-6">
         {isTopic ? (
-          <div className="animate-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-2 mb-4 px-1">
-              <BookOpen className="w-5 h-5 text-amber-500" />
-              <h2 className="font-black text-slate-800 uppercase tracking-tight">Learning Resources</h2>
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-8 border-b border-slate-50 pb-4">
+              <BookOpen className="w-6 h-6 text-amber-500" />
+              <h2 className="text-xl font-black text-slate-800">Learning Resources</h2>
             </div>
             <ResourceManager nodeId={nodeId} />
           </div>
@@ -150,30 +125,29 @@ export default function NodeDetailsPage() {
           <SubNodeList 
             childrenNodes={children}
             onNavigate={(id) => router.push(`/admin/tree/${id}`)}
-            onEdit={openEditModal}
-            onAddFirstItem={() => setIsCreateModalOpen(true)}
+            onEdit={(e, node) => { e.stopPropagation(); setIsEditOpen(true); }}
+            onAddFirstItem={() => setIsCreateOpen(true)}
           />
         )}
       </div>
 
       <CreateNodeModal 
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateNode}
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onSubmit={handleCreate}
         isLoading={isProcessing}
         parentId={nodeId}
         parentType={currentNode?.node_type}
       />
 
       <EditNodeModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSubmit={handleUpdateNode}
-        onDelete={handleDeleteNode}
-        node={editingNode}
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onSubmit={handleUpdate}
+        onDelete={handleDelete}
+        node={currentNode}
         isLoading={isProcessing}
       />
-
     </div>
   );
 }
