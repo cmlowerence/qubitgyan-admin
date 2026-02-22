@@ -43,15 +43,14 @@ export default function UsersPage() {
         const usersData = await getUsers();
         setUsers(usersData);
       } catch (err) {
-        // console.error("Failed to load data");
+        console.error("Failed to load data");
       } finally {
         setLoading(false);
       }
     };
     init();
-  }, []); // init
+  }, []); 
 
-  // keep local currentUser in sync with global context
   useEffect(() => {
     setCurrentUser(ctxUser);
   }, [ctxUser, userLoading]);

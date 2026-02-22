@@ -10,7 +10,7 @@ export interface KnowledgeNode {
   thumbnail_url?: string;
   is_active: boolean;
   children?: KnowledgeNode[];
-  resource_count?: number;  // NEW: Backend sends this count
+  items_count?: number; 
 }
 
 export interface CreateNodePayload {

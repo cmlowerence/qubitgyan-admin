@@ -1,3 +1,4 @@
+// src/components/tree/TreeNode.tsx
 'use client';
 
 import React from 'react';
@@ -25,50 +26,80 @@ export function TreeNode({ node, level, expandedIds, onToggle, onAddChild, onNav
     TOPIC: 'text-amber-600 bg-amber-50'
   };
 
+  // Base padding plus level indentation. Using padding instead of margin prevents touch target shrinkage on mobile.
+  const paddingLeftStyle = { paddingLeft: `calc(1rem + ${level * 16}px)` };
+
   return (
-    <div className="select-none animate-in fade-in slide-in-from-left-2">
+    <div className="select-none w-full animate-in fade-in slide-in-from-left-2">
       <div 
-        className={`group flex items-center py-3 px-4 hover:bg-white hover:shadow-sm rounded-2xl cursor-pointer transition-all border border-transparent ${isExpanded ? 'bg-white shadow-sm' : ''}`}
-        style={{ marginLeft: `${level * 12}px` }}
+        className={`group flex items-center py-2.5 sm:py-3 pr-3 sm:pr-4 hover:bg-slate-50 transition-colors border-y border-transparent cursor-pointer relative min-w-0 ${isExpanded ? 'bg-slate-50/50' : ''}`}
+        style={paddingLeftStyle}
         onClick={() => onToggle(node.id)}
       >
-        <div className="w-6 h-6 flex items-center justify-center mr-2 text-slate-400">
-          {hasChildren ? (isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />) : <div className="w-4 h-4 rounded-full bg-slate-100" />}
+        {/* Toggle Icon or Spacer */}
+        <div className="w-7 sm:w-8 h-7 sm:h-8 flex shrink-0 items-center justify-center mr-1.5 sm:mr-2 text-slate-400 hover:bg-slate-200 rounded-md transition-colors">
+          {hasChildren ? (
+            isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />
+          ) : (
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+          )}
         </div>
 
-        <div className={`p-1.5 rounded-lg mr-3 ${colors[node.node_type]}`}>
-          <Icon size={16} />
+        {/* Node Type Icon */}
+        <div className={`p-1.5 sm:p-2 shrink-0 rounded-lg mr-2.5 sm:mr-3 ${colors[node.node_type]}`}>
+          <Icon size={16} className="sm:w-5 sm:h-5" />
         </div>
 
-        <span className="text-sm font-bold text-slate-700 flex-1 truncate" onClick={(e) => { e.stopPropagation(); onNavigate(node.id); }}>
+        {/* Node Name */}
+        <span 
+          className="text-sm sm:text-base font-semibold text-slate-700 flex-1 truncate hover:text-indigo-600 transition-colors" 
+          onClick={(e) => { e.stopPropagation(); onNavigate(node.id); }}
+        >
           {node.name}
         </span>
         
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Actions - Always visible on mobile, hover-only on larger screens */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity ml-2">
           {node.node_type !== 'TOPIC' && (
-            <button onClick={(e) => { e.stopPropagation(); onAddChild(node.id); }} className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors">
-              <Plus size={16} />
+            <button 
+              onClick={(e) => { e.stopPropagation(); onAddChild(node.id); }} 
+              className="p-1.5 sm:p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              title="Add Child Node"
+            >
+              <Plus size={16} className="sm:w-4 sm:h-4" />
             </button>
           )}
-          <button onClick={(e) => { e.stopPropagation(); onNavigate(node.id); }} className="p-2 hover:bg-slate-100 text-slate-500 rounded-lg">
-            <Settings size={16} />
+          <button 
+            onClick={(e) => { e.stopPropagation(); onNavigate(node.id); }} 
+            className="p-1.5 sm:p-2 text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400"
+            title="Node Settings"
+          >
+            <Settings size={16} className="sm:w-4 sm:h-4" />
           </button>
         </div>
       </div>
 
+      {/* Recursive Children */}
       {isExpanded && hasChildren && (
-        <div className="mt-1 border-l-2 border-slate-100 ml-6">
-          {node.children!.map((child) => (
-            <TreeNode 
-              key={child.id} 
-              node={child} 
-              level={level + 1} 
-              expandedIds={expandedIds}
-              onToggle={onToggle}
-              onAddChild={onAddChild}
-              onNavigate={onNavigate}
-            />
-          ))}
+        <div className="relative">
+          {/* Subtle vertical line to visually connect children */}
+          <div 
+            className="absolute left-0 top-0 bottom-0 w-px bg-slate-200" 
+            style={{ marginLeft: `calc(1rem + ${level * 16 + 14}px)` }} 
+          />
+          <div className="flex flex-col">
+            {node.children!.map((child) => (
+              <TreeNode 
+                key={child.id} 
+                node={child} 
+                level={level + 1} 
+                expandedIds={expandedIds}
+                onToggle={onToggle}
+                onAddChild={onAddChild}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

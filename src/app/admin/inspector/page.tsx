@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useCurrentUser } from '@/context/current-user-context';
 import { Terminal, Play } from 'lucide-react';
 
-const defaultEndpoints = ['/system/health/', '/manager/emails/queue_status/', '/dashboard/stats/'];
+const defaultEndpoints = ['/health/', '/manager/emails/queue_status/', '/dashboard/stats/'];
 
 export default function ApiInspectorPage() {
   const { user } = useCurrentUser();

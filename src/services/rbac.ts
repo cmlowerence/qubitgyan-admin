@@ -3,6 +3,8 @@ import { api, handleApiError } from '@/lib/api';
 export interface AdminRBACProfile {
   id: number;
   username: string;
+  first_name: string;
+  last_name: string;
   email: string;
   is_superuser: boolean;
   avatar_url: string | null;
@@ -23,6 +25,7 @@ export const getAdminsRBAC = async (): Promise<AdminRBACProfile[]> => {
     for (const endpoint of endpoints) {
       try {
         const response = await api.get(endpoint);
+        console.log('RBAC Response:', response.data);
         return Array.isArray(response.data) ? response.data : response.data.results || [];
       } catch (error: any) {
         if (error?.response?.status !== 404) throw error;

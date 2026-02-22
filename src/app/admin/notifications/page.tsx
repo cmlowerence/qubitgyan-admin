@@ -4,19 +4,21 @@
 import { useEffect, useState } from 'react';
 import { getManagerNotifications, createNotification, deleteNotification, AppNotification } from '@/services/notifications';
 import { getUsers, User } from '@/services/users';
-import { Bell, Send, Trash2, Users as UsersIcon, User as UserIcon, Globe } from 'lucide-react';
+import { Bell, Send, Trash2, User as UserIcon, Globe, MessageSquare } from 'lucide-react';
+import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [students, setStudents] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Composer State
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
-  const [targetUserId, setTargetUserId] = useState<string | number>('GLOBAL');
+  const [targetUserId, setTargetUserId] = useState<string>('GLOBAL');
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState('');
+  
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [alertState, setAlertState] = useState<{ open: boolean; title: string; msg: string; type: 'success' | 'danger' | 'info' }>({ open: false, title: '', msg: '', type: 'info' });
 
   useEffect(() => {
     loadData();
@@ -30,10 +32,9 @@ export default function NotificationsPage() {
         getUsers()
       ]);
       setNotifications(notifsData);
-      // Filter out staff so we only message students
       setStudents(usersData.filter(u => !u.is_staff));
-    } catch (err: any) {
-      // console.error("Failed to load data", err);
+    } catch (err) {
+      setAlertState({ open: true, title: 'Error', msg: 'Failed to load communications data.', type: 'danger' });
     } finally {
       setLoading(false);
     }
@@ -42,13 +43,11 @@ export default function NotificationsPage() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !message.trim()) {
-      setError("Title and Message are required.");
+      setAlertState({ open: true, title: 'Validation Error', msg: 'Title and Message are required.', type: 'danger' });
       return;
     }
 
     setSending(true);
-    setError('');
-
     try {
       await createNotification({
         title,
@@ -56,162 +55,212 @@ export default function NotificationsPage() {
         target_user: targetUserId === 'GLOBAL' ? null : Number(targetUserId)
       });
       
-      // Reset form and refresh
       setTitle('');
       setMessage('');
       setTargetUserId('GLOBAL');
       await loadData();
+      setAlertState({ open: true, title: 'Message Dispatched', msg: 'Your notification was sent successfully.', type: 'success' });
     } catch (err: any) {
-      setError(err.message || "Failed to send notification.");
+      setAlertState({ open: true, title: 'Failed to Send', msg: err.message || "An unexpected error occurred.", type: 'danger' });
     } finally {
       setSending(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this notification? It will be removed from student inboxes.")) return;
+  const executeDelete = async () => {
+    if (!confirmDeleteId) return;
     try {
-      await deleteNotification(id);
+      await deleteNotification(confirmDeleteId);
       await loadData();
+      setAlertState({ open: true, title: 'Deleted', msg: 'Notification permanently removed.', type: 'success' });
     } catch (err: any) {
-      alert(`Failed to delete: ${err.message}`);
+      setAlertState({ open: true, title: 'Delete Failed', msg: err.message || 'Could not delete notification.', type: 'danger' });
+    } finally {
+      setConfirmDeleteId(null);
     }
   };
 
   if (loading && notifications.length === 0) {
-    return <div className="p-8 text-center text-gray-500 animate-pulse">Loading Communications...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 animate-pulse">
+        <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
+          <Bell className="w-8 h-8 text-indigo-500" />
+        </div>
+        <p className="text-slate-500 font-medium">Synchronizing Communications...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-blue-100 rounded-lg">
-          <Bell className="w-6 h-6 text-blue-700" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Communication Center</h1>
-          <p className="text-gray-500 text-sm">Send global announcements or direct messages to students.</p>
+    <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3.5 bg-indigo-50 rounded-2xl border border-indigo-100/50">
+            <MessageSquare className="w-7 h-7 text-indigo-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Communication Center</h1>
+            <p className="text-slate-500 text-sm font-medium mt-1">Dispatch global announcements or targeted direct messages.</p>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Left Column: The Composer */}
-        <div className="col-span-1">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Send className="w-4 h-4 text-blue-600" /> New Message
-            </h2>
+        <div className="lg:col-span-4">
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 p-6 md:p-8 lg:sticky lg:top-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                <Send className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl font-extrabold text-slate-800">Composer</h2>
+            </div>
 
-            <form onSubmit={handleSend} className="space-y-4">
-              {error && (
-                <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-medium">
-                  {error}
+            <form onSubmit={handleSend} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Audience</label>
+                <div className="relative">
+                  <select
+                    value={targetUserId}
+                    onChange={(e) => setTargetUserId(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-semibold text-slate-700 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all appearance-none outline-none cursor-pointer"
+                  >
+                    <option value="GLOBAL">Global Blast (All Students)</option>
+                    <optgroup label="Direct Message">
+                      {students.map(student => (
+                        <option key={student.id} value={student.id}>
+                          {student.first_name} {student.last_name} ({student.username})
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    {targetUserId === 'GLOBAL' ? <Globe className="w-5 h-5" /> : <UserIcon className="w-5 h-5" />}
+                  </div>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
-                <select
-                  value={targetUserId}
-                  onChange={(e) => setTargetUserId(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 outline-none"
-                >
-                  <option value="GLOBAL">🌍 Global Blast (All Students)</option>
-                  <optgroup label="Direct Message">
-                    {students.map(student => (
-                      <option key={student.id} value={student.id}>
-                        👤 {student.first_name} {student.last_name} ({student.username})
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Title</label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., Scheduled Maintenance"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-semibold text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Message</label>
                 <textarea
                   required
-                  rows={4}
+                  rows={5}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Type your announcement here..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 outline-none resize-none"
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-slate-700 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all outline-none resize-none custom-scrollbar"
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={sending}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
+                disabled={sending || !title.trim() || !message.trim()}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-200 active:scale-[0.98]"
               >
-                {sending ? 'Dispatching...' : 'Dispatch Message'} <Send className="w-4 h-4" />
+                {sending ? 'Dispatching...' : 'Dispatch Message'} <Send className="w-5 h-5" />
               </button>
             </form>
           </div>
         </div>
 
-        {/* Right Column: Message History */}
-        <div className="col-span-1 lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">Message History</h2>
+        <div className="lg:col-span-8 space-y-4">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <h2 className="text-xl font-extrabold text-slate-800">Outbox History</h2>
+            <span className="text-sm font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{notifications.length} Total</span>
+          </div>
           
           {notifications.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-xl border border-dashed border-gray-300">
-              <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No notifications sent yet.</p>
+            <div className="p-16 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <Bell className="w-10 h-10 text-slate-300" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-700 mb-1">No messages sent</h3>
+              <p className="text-slate-400 text-sm max-w-sm">Use the composer to send your first notification to students.</p>
             </div>
           ) : (
-            notifications.map((notif) => (
-              <div key={notif.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 group flex flex-col sm:flex-row gap-4">
-                
-                <div className="shrink-0 pt-1">
-                  {notif.target_user ? (
-                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center" title="Direct Message">
-                      <UserIcon className="w-5 h-5" />
-                    </div>
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center" title="Global Blast">
-                      <Globe className="w-5 h-5" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="font-bold text-gray-900 line-clamp-1">{notif.title}</h3>
-                      <p className="text-xs font-medium text-gray-500 mt-0.5">
-                        {notif.target_user ? `Targeted Student ID: ${notif.target_user}` : 'All Students'} • {new Date(notif.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <button 
-                      onClick={() => handleDelete(notif.id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+            <div className="space-y-4">
+              {notifications.map((notif) => (
+                <div key={notif.id} className="bg-white rounded-3xl shadow-sm hover:shadow-md border border-slate-100 p-5 md:p-6 transition-all group flex flex-col sm:flex-row gap-5">
+                  
+                  <div className="shrink-0">
+                    {notif.target_user ? (
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100" title="Direct Message">
+                        <UserIcon className="w-6 h-6" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100" title="Global Blast">
+                        <Globe className="w-6 h-6" />
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-600 mt-3 whitespace-pre-wrap">{notif.message}</p>
-                </div>
 
-              </div>
-            ))
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${notif.target_user ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-indigo-50 border-indigo-200 text-indigo-700'}`}>
+                            {notif.target_user ? 'Direct Message' : 'Global Broadcast'}
+                          </span>
+                          <span className="text-xs font-bold text-slate-400">
+                            {new Date(notif.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-black text-slate-800 leading-tight">{notif.title}</h3>
+                        {notif.target_user && (
+                          <p className="text-xs font-bold text-slate-500 mt-1">Target ID: {notif.target_user}</p>
+                        )}
+                      </div>
+                      <button 
+                        onClick={() => setConfirmDeleteId(notif.id)}
+                        className="p-2.5 text-slate-400 bg-slate-50 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors sm:opacity-0 sm:group-hover:opacity-100 shrink-0 self-start focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        title="Delete Notification"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="mt-4 p-4 bg-slate-50 rounded-2xl">
+                      <p className="text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">{notif.message}</p>
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
       </div>
+
+      <ConfirmModal
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={executeDelete}
+        title="Delete Notification?"
+        message="Are you sure you want to permanently delete this notification? It will be removed from the recipients' inboxes immediately."
+        confirmText="Yes, Delete"
+        type="danger"
+      />
+
+      <AlertModal
+        isOpen={alertState.open}
+        onClose={() => setAlertState(prev => ({ ...prev, open: false }))}
+        title={alertState.title}
+        message={alertState.msg}
+        type={alertState.type}
+      />
     </div>
   );
 }
