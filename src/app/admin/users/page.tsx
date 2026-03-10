@@ -11,7 +11,6 @@ import { EditUserModal } from '@/components/users/EditUserModal';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
 import { useCurrentUser } from '@/context/current-user-context';
 
-// Dumb Components
 import UsersHeader from './_components/UsersHeader';
 import UserSearch from './_components/UserSearch';
 import UsersMobileList from './_components/UsersMobileList';
@@ -23,7 +22,6 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
-  // Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -33,7 +31,6 @@ export default function UsersPage() {
     open: false, title: '', msg: '', type: 'success'
   });
 
-  // 1. Fetch Data
   const { user: ctxUser, loading: userLoading } = useCurrentUser();
 
   useEffect(() => {
@@ -43,7 +40,6 @@ export default function UsersPage() {
         const usersData = await getUsers();
         setUsers(usersData);
       } catch (err) {
-        console.error("Failed to load data");
       } finally {
         setLoading(false);
       }
@@ -60,7 +56,6 @@ export default function UsersPage() {
     setUsers(data);
   };
 
-  // 2. Handlers
   const handleCreate = async (data: CreateUserPayload) => {
     setIsProcessing(true);
     try {
@@ -141,7 +136,7 @@ export default function UsersPage() {
   );
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto pb-24 space-y-5 animate-in fade-in duration-500">
+    <div className="w-full space-y-6 sm:space-y-8 animate-in fade-in duration-500 pb-20">
       
       <UsersHeader onAdd={() => setIsCreateOpen(true)} />
 
@@ -165,7 +160,6 @@ export default function UsersPage() {
         onToggleSuspend={setSuspendId}
       />
 
-      {/* Modals & Dialogs */}
       <CreateUserModal 
         isOpen={isCreateOpen} 
         onClose={() => setIsCreateOpen(false)} 
@@ -187,8 +181,8 @@ export default function UsersPage() {
         onClose={() => setDeleteId(null)} 
         onConfirm={handleDelete} 
         title="Delete User?" 
-        message="Permanent action." 
-        confirmText="Delete" 
+        message="This action is permanent and cannot be undone." 
+        confirmText="Yes, Delete" 
         type="danger" 
         isLoading={isProcessing} 
       />
@@ -197,8 +191,8 @@ export default function UsersPage() {
         isOpen={!!suspendId} 
         onClose={() => setSuspendId(null)} 
         onConfirm={handleToggleSuspend} 
-        title={users.find(u => u.id === suspendId)?.is_suspended ? "Activate?" : "Suspend?"} 
-        message="Toggle access." 
+        title={users.find(u => u.id === suspendId)?.is_suspended ? "Activate User?" : "Suspend User?"} 
+        message={`Are you sure you want to ${users.find(u => u.id === suspendId)?.is_suspended ? 'restore' : 'revoke'} system access for this user?`} 
         confirmText={users.find(u => u.id === suspendId)?.is_suspended ? "Activate" : "Suspend"} 
         type={users.find(u => u.id === suspendId)?.is_suspended ? "success" : "danger"} 
         isLoading={isProcessing} 

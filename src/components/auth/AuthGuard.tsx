@@ -21,7 +21,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (loading) return; // wait for context to resolve
+      if (loading) return; 
 
       if (!user) {
         logoutAdmin();

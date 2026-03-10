@@ -7,25 +7,25 @@ interface UsersHeaderProps {
 
 export default function UsersHeader({ onAdd }: UsersHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
-      <div>
-        <h1 className="text-lg md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2 md:gap-3">
-          <span className="p-1.5 md:p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
-            <Users className="w-5 h-5 md:w-8 md:h-8 text-indigo-600 dark:text-indigo-400" />
-          </span>
-          User Management
+    <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-5 border-b border-slate-200 dark:border-slate-800 pb-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white flex items-center gap-3 tracking-tight">
+          <div className="p-2 sm:p-2.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
+            <Users className="w-6 h-6 sm:w-8 sm:h-8" />
+          </div>
+          Directory
         </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-lg leading-relaxed">
-          Manage access and permissions.
+        <p className="text-sm sm:text-base font-medium text-slate-500 dark:text-slate-400">
+          Manage system access, roles, and user profiles.
         </p>
       </div>
       
       <button 
         onClick={onAdd}
-        className="w-full md:w-auto px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:opacity-90 shadow-lg shadow-slate-200 dark:shadow-none transition-all flex items-center justify-center gap-2 text-sm active:scale-95"
+        className="w-full sm:w-auto px-6 py-3.5 sm:py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-xl hover:opacity-90 shadow-lg shadow-slate-900/20 dark:shadow-white/10 transition-all flex items-center justify-center gap-2.5 text-sm active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 dark:focus:ring-white dark:focus:ring-offset-slate-900"
       >
-        <UserPlus className="w-4 h-4" />
-        Add User
+        <UserPlus className="w-5 h-5" />
+        Add New User
       </button>
     </div>
   );

@@ -1,3 +1,4 @@
+// src/context/current-user-context.tsx
 'use client';
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -31,7 +32,6 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
       const prev = user;
       setUser(me);
 
-      // If this update affects the currently logged in user, show a toast with changed flags
       if (prev && me && prev.id === me.id) {
         const diffs: string[] = [];
         const flags: Array<keyof Pick<User, 'can_manage_users' | 'can_manage_content' | 'can_approve_admissions'>> = [
@@ -56,7 +56,6 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
 
       return me;
     } catch (err) {
-      // swallow — caller can handle
       setUser(null);
       return null;
     } finally {
@@ -65,12 +64,9 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
   };
 
   useEffect(() => {
-    // initial fetch
     refreshUser();
 
-    // listen for cross-tab or in-app broadcasts
     const handler = async (ev?: any) => {
-      // If user:updated provides a payload we could use it, but prefer fresh fetch
       await refreshUser();
     };
 

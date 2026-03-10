@@ -1,5 +1,5 @@
 // src/app/login/_components/LoginForm.tsx
-import { Lock, Mail, AlertCircle, ShieldAlert } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ShieldAlert, ArrowRight } from 'lucide-react';
 
 interface LoginFormProps {
   email: string;
@@ -19,55 +19,61 @@ export default function LoginForm({
   onSubmit
 }: LoginFormProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 sm:p-8 relative overflow-hidden">
+      
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-1/4 -right-1/4 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-[100px]" />
+        <div className="absolute -bottom-1/4 -left-1/4 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/20 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="relative z-10 bg-white dark:bg-slate-900 rounded-3xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-black/50 w-full max-w-md overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 border border-slate-100 dark:border-slate-800">
         
-        <div className="bg-blue-600 p-8 text-center relative overflow-hidden">
+        <div className="bg-slate-900 dark:bg-black p-8 sm:p-10 text-center relative overflow-hidden">
           <div className="relative z-10">
-            <h1 className="text-2xl font-bold text-white mb-2">QubitGyan Admin</h1>
-            <p className="text-blue-100 text-sm">Secure Gateway for Staff Only</p>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">QubitGyan Admin</h1>
+            <p className="text-slate-400 text-xs sm:text-sm font-bold tracking-widest uppercase">Secure Gateway</p>
           </div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+          <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
         </div>
 
-        <form onSubmit={onSubmit} className="p-8 space-y-6">
+        <form onSubmit={onSubmit} className="p-6 sm:p-8 space-y-6 sm:space-y-8">
           {error && (
-            <div className={`p-3 rounded-lg text-sm flex items-start gap-2 border ${
+            <div className={`p-4 rounded-xl text-sm flex items-start gap-3 border animate-in slide-in-from-top-2 fade-in duration-300 ${
               error.includes("Restricted") 
-                ? "bg-amber-50 text-amber-700 border-amber-100"
-                : "bg-red-50 text-red-600 border-red-100"
+                ? "bg-amber-50 dark:bg-amber-900/10 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800/50"
+                : "bg-rose-50 dark:bg-rose-900/10 text-rose-800 dark:text-rose-400 border-rose-200 dark:border-rose-800/50"
             }`}>
               {error.includes("Restricted") ? (
                 <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
               ) : (
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
               )}
-              <span className="font-medium">{error}</span>
+              <span className="font-bold leading-relaxed">{error}</span>
             </div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-4 sm:space-y-5">
             <div className="relative group">
-              {/* Changed icon to Mail and input type to email */}
-              <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
               <input
                 type="email" 
                 placeholder="Email Address"
                 value={email}
                 onChange={(e) => onEmailChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-gray-700"
+                className="w-full pl-12 pr-4 py-3.5 sm:py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-900 dark:text-slate-100 placeholder:font-medium placeholder:text-slate-400"
                 required
               />
             </div>
             
             <div className="relative group">
-              <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
               <input
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => onPasswordChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-gray-700"
+                className="w-full pl-12 pr-4 py-3.5 sm:py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-900 dark:text-slate-100 placeholder:font-medium placeholder:text-slate-400"
                 required
               />
             </div>
@@ -75,9 +81,12 @@ export default function LoginForm({
 
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg shadow-blue-200 transition-all active:scale-95 flex justify-center items-center gap-2"
+            className="w-full group relative flex items-center justify-center gap-2 py-3.5 sm:py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:focus:ring-offset-slate-900 text-sm sm:text-base overflow-hidden"
           >
-            Sign In
+            <span className="relative z-10 flex items-center gap-2">
+              Sign In to Dashboard
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:translate-x-1" />
+            </span>
           </button>
         </form>
       </div>

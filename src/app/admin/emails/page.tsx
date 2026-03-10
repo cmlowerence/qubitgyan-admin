@@ -5,21 +5,26 @@ import {
   getQueueStatus, 
   dispatchEmailBatch, 
   QueueStatus,
-  getEmailList, // Make sure to add this to your services
-  sendIndividualEmail, // Make sure to add this to your services
-  QueuedEmail // Make sure to add this to your services
+  getEmailList,
+  sendIndividualEmail,
+  QueuedEmail
 } from '@/services/emails';
-import { Mail, Send, AlertCircle, Clock, CheckCircle, RefreshCw, ChevronRight } from 'lucide-react';
+import { Mail, Send, AlertCircle, Clock, CheckCircle, RefreshCw } from 'lucide-react';
+
+// Import your beautiful new modal
+import { AlertModal } from '@/components/ui/dialogs';
 
 // ==========================================
 // LOCAL COMPONENT: Email Queue List
 // ==========================================
 function EmailQueueList({ 
   refreshTrigger, 
-  onEmailSent 
+  onEmailSent,
+  showAlert // Passed down from parent to use the central modal
 }: { 
   refreshTrigger: number, 
-  onEmailSent: () => void 
+  onEmailSent: () => void,
+  showAlert: (title: string, message: string, type: 'success' | 'danger' | 'info') => void
 }) {
   const [emails, setEmails] = useState<QueuedEmail[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +42,6 @@ function EmailQueueList({
     }
   }, []);
 
-  // Re-fetch when the component mounts or when the bulk dispatcher triggers a refresh
   useEffect(() => {
     fetchEmails();
   }, [refreshTrigger, fetchEmails]);
@@ -46,11 +50,22 @@ function EmailQueueList({
     try {
       setSendingId(id);
       await sendIndividualEmail(id);
-      await fetchEmails(); // Refresh the list
-      onEmailSent(); // Tell the parent to refresh the top-level stats
+      
+      showAlert(
+        "Email Queued for Delivery", 
+        "This email is now being processed in the background. The status will update shortly.", 
+        "success"
+      );
+
+      // Wait 2 seconds before refreshing to give the background thread time to finish
+      setTimeout(() => {
+        fetchEmails(); 
+        onEmailSent(); 
+      }, 2000);
+
     } catch (error) {
       console.error("Failed to send email", error);
-      alert("Failed to send email. Check console for details.");
+      showAlert("Sending Failed", "Failed to initiate email delivery. Please try again.", "danger");
     } finally {
       setSendingId(null);
     }
@@ -75,7 +90,7 @@ function EmailQueueList({
         <p className="text-sm text-gray-500">Showing recent emails</p>
       </div>
 
-      {/* MOBILE VIEW: Cards (Hidden on md and up) */}
+      {/* MOBILE VIEW */}
       <div className="md:hidden flex flex-col divide-y divide-gray-100">
         {emails.map((email) => (
           <div key={email.id} className="p-4 space-y-3">
@@ -110,7 +125,7 @@ function EmailQueueList({
         ))}
       </div>
 
-      {/* DESKTOP VIEW: Table (Hidden on small screens) */}
+      {/* DESKTOP VIEW */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-sm text-gray-600">
           <thead className="bg-gray-50 text-gray-700 font-medium border-b border-gray-100">
@@ -177,12 +192,26 @@ function EmailQueueList({
 export default function EmailQueuePage() {
   const [status, setStatus] = useState<QueueStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [dispatching, setDispatching] = useState(false);
-  const [batchLimit, setBatchLimit] = useState<number>(20);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   
-  // This state is used to trigger a refresh in the child component when a bulk action occurs
+  // Controls the spam-prevention disabled state
+  const [isCoolingDown, setIsCoolingDown] = useState(false); 
+  
+  const [batchLimit, setBatchLimit] = useState<number>(20);
   const [listRefreshTrigger, setListRefreshTrigger] = useState(0);
+
+  // Modal State
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'danger' | 'info';
+  }>({
+    isOpen: false, title: '', message: '', type: 'info'
+  });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'danger' | 'info') => {
+    setModal({ isOpen: true, title, message, type });
+  };
 
   useEffect(() => {
     loadStatus();
@@ -194,7 +223,7 @@ export default function EmailQueuePage() {
       const data = await getQueueStatus();
       setStatus(data);
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Failed to load queue status.' });
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -202,30 +231,33 @@ export default function EmailQueuePage() {
 
   const handleDispatch = async () => {
     if (batchLimit < 1) {
-      setMessage({ type: 'error', text: 'Batch limit must be at least 1.' });
+      showAlert("Invalid Batch Limit", "Batch limit must be at least 1.", "danger");
       return;
     }
 
     try {
-      setDispatching(true);
-      setMessage(null);
-      const response = await dispatchEmailBatch(batchLimit);
+      // Disable button instantly to prevent double clicks
+      setIsCoolingDown(true); 
       
-      setMessage({ 
-        type: 'success', 
-        text: `Successfully dispatched ${response.dispatched_count} emails.` 
-      });
+      await dispatchEmailBatch(batchLimit);
       
-      // Refresh the queue numbers after sending
-      await loadStatus();
+      showAlert(
+        "Batch Processing Initiated", 
+        "Your emails have been securely queued for background dispatch. They will be sent momentarily. You can navigate away or refresh the page later to see the updated status.", 
+        "success"
+      );
       
-      // Trigger the list component to refresh its data
-      setListRefreshTrigger(prev => prev + 1);
+      // Wait 3 seconds before reloading data. This gives the background thread
+      // on the server a head start so the numbers actually change when we refresh!
+      setTimeout(() => {
+        loadStatus();
+        setListRefreshTrigger(prev => prev + 1);
+        setIsCoolingDown(false); // Re-enable the button after cooldown
+      }, 3000);
       
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Failed to dispatch emails.' });
-    } finally {
-      setDispatching(false);
+      showAlert("Dispatch Failed", err.message || "Failed to dispatch emails.", "danger");
+      setIsCoolingDown(false);
     }
   };
 
@@ -236,7 +268,6 @@ export default function EmailQueuePage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300">
       
-      {/* Existing Header */}
       <div className="flex items-center justify-between border-b border-gray-100 pb-6">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-100 rounded-lg">
@@ -250,24 +281,15 @@ export default function EmailQueuePage() {
         <button 
           onClick={() => {
             loadStatus();
-            setListRefreshTrigger(prev => prev + 1); // Refresh list on manual refresh
+            setListRefreshTrigger(prev => prev + 1);
           }}
-          disabled={loading || dispatching}
+          disabled={loading || isCoolingDown}
           className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
           title="Refresh Queue Status"
         >
           <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
-
-      {message && (
-        <div className={`p-4 rounded-xl flex items-center gap-3 font-medium ${
-          message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-        }`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          {message.text}
-        </div>
-      )}
 
       {/* Stats Dashboard */}
       {status && (
@@ -298,14 +320,12 @@ export default function EmailQueuePage() {
         </div>
       )}
 
-      {/* Existing Dispatch Control Panel */}
-      {/* ... keeping the UI exactly as you had it ... */}
+      {/* Manual Dispatch Control Panel */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center max-w-2xl mx-auto mt-8">
         <Send className="w-12 h-12 text-blue-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-gray-800 mb-2">Manual Dispatch Control</h2>
         <p className="text-gray-500 text-sm mb-6">
-          To prevent Gmail from blocking your account for spam, send emails in small batches. 
-          A batch size of 20-50 is recommended.
+          Emails are processed securely in the background. A batch size of 20-50 is recommended.
         </p>
 
         <div className="flex items-center justify-center gap-4 max-w-xs mx-auto">
@@ -322,10 +342,10 @@ export default function EmailQueuePage() {
           </div>
           <button
             onClick={handleDispatch}
-            disabled={dispatching || (status?.pending_emails === 0)}
+            disabled={isCoolingDown || (status?.pending_emails === 0)}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {dispatching ? 'Sending...' : 'Dispatch Batch'}
+            {isCoolingDown ? 'Processing...' : 'Dispatch Batch'}
           </button>
         </div>
         
@@ -336,10 +356,20 @@ export default function EmailQueuePage() {
         )}
       </div>
 
-      {/* NEW: Individual Email List */}
+      {/* Individual Email List */}
       <EmailQueueList 
         refreshTrigger={listRefreshTrigger} 
         onEmailSent={loadStatus} 
+        showAlert={showAlert}
+      />
+
+      {/* Centralized Alert Modal */}
+      <AlertModal
+        isOpen={modal.isOpen}
+        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
       />
 
     </div>

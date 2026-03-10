@@ -20,72 +20,65 @@ export function TreeNode({ node, level, expandedIds, onToggle, onAddChild, onNav
   
   const Icon = node.node_type === 'TOPIC' ? FileText : Folder;
   const colors = {
-    DOMAIN: 'text-indigo-600 bg-indigo-50',
-    SUBJECT: 'text-blue-600 bg-blue-50',
-    SECTION: 'text-emerald-600 bg-emerald-50',
-    TOPIC: 'text-amber-600 bg-amber-50'
+    DOMAIN: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400',
+    SUBJECT: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
+    SECTION: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400',
+    TOPIC: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400'
   };
 
-  // Base padding plus level indentation. Using padding instead of margin prevents touch target shrinkage on mobile.
   const paddingLeftStyle = { paddingLeft: `calc(1rem + ${level * 16}px)` };
 
   return (
     <div className="select-none w-full animate-in fade-in slide-in-from-left-2">
       <div 
-        className={`group flex items-center py-2.5 sm:py-3 pr-3 sm:pr-4 hover:bg-slate-50 transition-colors border-y border-transparent cursor-pointer relative min-w-0 ${isExpanded ? 'bg-slate-50/50' : ''}`}
+        className={`group flex items-center py-3 pr-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-y border-transparent cursor-pointer relative min-w-0 min-h-[48px] sm:min-h-[52px] ${isExpanded ? 'bg-slate-50/50 dark:bg-slate-800/30' : ''}`}
         style={paddingLeftStyle}
         onClick={() => onToggle(node.id)}
       >
-        {/* Toggle Icon or Spacer */}
-        <div className="w-7 sm:w-8 h-7 sm:h-8 flex shrink-0 items-center justify-center mr-1.5 sm:mr-2 text-slate-400 hover:bg-slate-200 rounded-md transition-colors">
+        <div className="w-8 sm:w-9 h-8 sm:h-9 flex shrink-0 items-center justify-center mr-2 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-300 rounded-lg transition-colors focus:outline-none">
           {hasChildren ? (
-            isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />
+            isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />
           ) : (
-            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
           )}
         </div>
 
-        {/* Node Type Icon */}
-        <div className={`p-1.5 sm:p-2 shrink-0 rounded-lg mr-2.5 sm:mr-3 ${colors[node.node_type]}`}>
-          <Icon size={16} className="sm:w-5 sm:h-5" />
+        <div className={`p-2 shrink-0 rounded-xl mr-3 ${colors[node.node_type]}`}>
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
 
-        {/* Node Name */}
         <span 
-          className="text-sm sm:text-base font-semibold text-slate-700 flex-1 truncate hover:text-indigo-600 transition-colors" 
+          className="text-base sm:text-lg font-bold text-slate-700 dark:text-slate-200 flex-1 truncate hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-1" 
           onClick={(e) => { e.stopPropagation(); onNavigate(node.id); }}
         >
           {node.name}
         </span>
         
-        {/* Actions - Always visible on mobile, hover-only on larger screens */}
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity ml-2">
+        <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity ml-2">
           {node.node_type !== 'TOPIC' && (
             <button 
               onClick={(e) => { e.stopPropagation(); onAddChild(node.id); }} 
-              className="p-1.5 sm:p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="p-2 sm:p-2.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
               title="Add Child Node"
             >
-              <Plus size={16} className="sm:w-4 sm:h-4" />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
           <button 
             onClick={(e) => { e.stopPropagation(); onNavigate(node.id); }} 
-            className="p-1.5 sm:p-2 text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400"
+            className="p-2 sm:p-2.5 text-slate-500 bg-slate-100 hover:bg-slate-200 dark:text-slate-400 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400"
             title="Node Settings"
           >
-            <Settings size={16} className="sm:w-4 sm:h-4" />
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>
 
-      {/* Recursive Children */}
       {isExpanded && hasChildren && (
         <div className="relative">
-          {/* Subtle vertical line to visually connect children */}
           <div 
-            className="absolute left-0 top-0 bottom-0 w-px bg-slate-200" 
-            style={{ marginLeft: `calc(1rem + ${level * 16 + 14}px)` }} 
+            className="absolute left-0 top-0 bottom-0 w-[2px] bg-slate-100 dark:bg-slate-800 rounded-full" 
+            style={{ marginLeft: `calc(1rem + ${level * 16 + 15}px)` }} 
           />
           <div className="flex flex-col">
             {node.children!.map((child) => (

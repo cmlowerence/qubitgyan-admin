@@ -34,11 +34,9 @@ export default function LoginPage() {
         throw new Error("Access Restricted: Students cannot access the Admin Portal.");
       }
 
-      // update global current-user context immediately
       try {
         setCurrentUser(user);
       } catch (e) {
-        /* noop */
       }
 
       setTimeout(() => {
@@ -46,8 +44,6 @@ export default function LoginPage() {
       }, 400);
 
     } catch (err: any) {
-      // console.error(err);
-      // Changed fallback error message to reflect email
       setError(err.message || 'Invalid email or password');
       setIsLoading(false);
     }
