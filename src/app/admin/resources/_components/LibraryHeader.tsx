@@ -1,4 +1,3 @@
-// src/app/admin/resources/_components/LibraryHeader.tsx
 import { LibraryBig } from 'lucide-react';
 
 interface LibraryHeaderProps {
@@ -7,24 +6,26 @@ interface LibraryHeaderProps {
 
 export default function LibraryHeader({ totalCount }: LibraryHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
-      <div>
-        <h1 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <LibraryBig className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+    <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 border-b border-slate-200 dark:border-slate-800 pb-6 sm:pb-8">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white flex items-center gap-3 tracking-tight">
+          <div className="p-2 sm:p-2.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
+            <LibraryBig className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
           Global Library
         </h1>
-        <p className="text-sm md:text-base text-slate-500 mt-2 max-w-xl leading-relaxed">
+        <p className="text-sm sm:text-base font-medium text-slate-500 dark:text-slate-400">
           Search and manage your entire content database from one command center.
         </p>
       </div>
       
-      <div className="flex items-center md:block gap-3 md:text-right bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-xl">
-        <span className="text-2xl md:text-3xl font-black text-slate-800">{totalCount}</span>
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2 md:ml-0 md:block">
-          Visible Files
-        </span>
+      <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm w-full md:w-auto justify-between md:justify-start">
+        <div className="flex flex-col md:text-right">
+          <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-none">{totalCount}</span>
+          <span className="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+            Visible Files
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -8,22 +8,24 @@ interface ContextHeaderProps {
 
 export default function ContextHeader({ isLoading, onRefresh }: ContextHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-          <Tag className="w-6 h-6" />
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 border-b border-slate-200 dark:border-slate-800 pb-6 sm:pb-8">
+      <div className="flex items-center gap-4 sm:gap-5">
+        <div className="p-3 sm:p-4 bg-purple-100 dark:bg-purple-900/30 rounded-2xl shrink-0 shadow-inner">
+          <Tag className="w-8 h-8 sm:w-10 sm:h-10 text-purple-600 dark:text-purple-400" />
         </div>
-        <div>
-          <h1 className="text-xl md:text-2xl font-black text-slate-800">Exam Contexts</h1>
-          <p className="text-xs md:text-sm text-slate-500">Manage tags for resources (JEE, NEET, etc.)</p>
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">Context Metadata</h1>
+          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium">Govern categorical tags used across resources and courses.</p>
         </div>
       </div>
       <button 
         onClick={onRefresh} 
-        className="self-start md:self-auto p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+        disabled={isLoading}
+        className="w-full sm:w-auto flex items-center justify-center gap-2 p-3 sm:px-5 sm:py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-purple-600 dark:hover:text-purple-400 transition-all disabled:opacity-50 shadow-sm focus:outline-none focus:ring-4 focus:ring-purple-500/20 active:scale-[0.98]"
         aria-label="Refresh contexts"
       >
-        <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+        <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin text-purple-500' : ''}`} />
+        <span className="sm:hidden">Refresh Data</span>
       </button>
     </div>
   );

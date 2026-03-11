@@ -1,4 +1,3 @@
-// src/app/admin/resources/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -8,8 +7,9 @@ import { api } from '@/lib/api';
 import { EditResourceModal } from '@/components/resources/EditResourceModal';
 import { getMediaList, UploadedMedia } from '@/services/media';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
+import DebugConsole from '@/components/debug/DebugConsole';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-// Import Dumb Components
 import LibraryHeader from './_components/LibraryHeader';
 import ResourceToolbar from './_components/ResourceToolbar';
 import ResourceList from './_components/ResourceList';
@@ -19,6 +19,7 @@ export default function GlobalLibraryPage() {
   const [contexts, setContexts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [media, setMedia] = useState<UploadedMedia[]>([]);
+  const [error, setError] = useState<any>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
@@ -38,7 +39,6 @@ export default function GlobalLibraryPage() {
         const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
         setContexts(data);
       } catch (err) {
-        // console.error("Failed to load filter contexts");
       }
     };
     loadContexts();
@@ -55,14 +55,15 @@ export default function GlobalLibraryPage() {
   const fetchResources = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await getAllResources({
         search: searchQuery,
         type: typeFilter,
         context: contextFilter
       });
       setResources(data);
-    } catch (err) {
-      // console.error("Failed to fetch global resources");
+    } catch (err: any) {
+      setError(err);
       setResources([]);
     } finally {
       setLoading(false);
@@ -108,8 +109,27 @@ export default function GlobalLibraryPage() {
     setContextFilter('ALL');
   };
 
+  if (error) {
+    return (
+      <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 flex items-center gap-3">
+            <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10" /> System Exception
+          </h1>
+          <button 
+            onClick={fetchResources}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-lg transition-transform active:scale-95 focus:outline-none focus:ring-4 focus:ring-slate-900/20 dark:focus:ring-white/20 w-full sm:w-auto"
+          >
+            <RefreshCw className="w-5 h-5" /> Retry Connection
+          </button>
+        </div>
+        <DebugConsole error={error} />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto pb-24 space-y-6 md:space-y-8 animate-in fade-in duration-500">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto pb-24 space-y-6 sm:space-y-8 animate-in fade-in duration-500">
       
       <LibraryHeader totalCount={resources.length} />
 
@@ -125,7 +145,7 @@ export default function GlobalLibraryPage() {
         onRefresh={fetchResources}
       />
 
-      <div className="min-h-[400px]">
+      <div className="min-h-[500px]">
         <ResourceList 
           resources={resources}
           isLoading={loading}

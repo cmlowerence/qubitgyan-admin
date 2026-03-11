@@ -1,3 +1,4 @@
+// src/app/admin/admissions/AdmissionActionModal.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,14 +23,12 @@ export default function AdmissionActionModal({
 }: AdmissionActionModalProps) {
   const [remarks, setRemarks] = useState('');
 
-  // Reset remarks when the modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setRemarks('');
     }
   }, [isOpen]);
 
-  // Handle escape key to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isProcessing) onClose();
@@ -42,56 +41,46 @@ export default function AdmissionActionModal({
 
   const isApprove = actionType === 'approve';
 
-  // Dynamic Theme Configurations
   const theme = {
-    icon: isApprove ? <CheckCircle className="w-6 h-6 text-emerald-600" /> : <AlertCircle className="w-6 h-6 text-rose-600" />,
-    iconBg: isApprove ? 'bg-emerald-100' : 'bg-rose-100',
+    icon: isApprove ? <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" /> : <AlertCircle className="w-8 h-8 text-rose-600 dark:text-rose-400" />,
+    iconBg: isApprove ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50' : 'bg-rose-100 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/50',
     title: isApprove ? 'Approve Application' : 'Reject Application',
     description: isApprove 
-      ? `You are about to approve the admission for ${studentName}. An account will be created and a welcome email will be sent.` 
-      : `You are about to reject the admission for ${studentName}. This action cannot be easily undone.`,
+      ? `You are about to approve the admission for ${studentName}. An account will be created and a welcome email will be dispatched.` 
+      : `You are about to reject the admission for ${studentName}. This action will discard the request and notify the user.`,
     placeholder: isApprove ? 'Optional remarks (e.g., "Verified via school ID")' : 'Required: Reason for rejection...',
     buttonColor: isApprove 
-      ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500' 
-      : 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500',
-    ringColor: isApprove ? 'focus:border-emerald-500 focus:ring-emerald-500/20' : 'focus:border-rose-500 focus:ring-rose-500/20',
+      ? 'bg-emerald-600 hover:bg-emerald-700 text-white focus:ring-emerald-500/30 shadow-emerald-600/20' 
+      : 'bg-rose-600 hover:bg-rose-700 text-white focus:ring-rose-500/30 shadow-rose-600/20',
+    ringColor: isApprove ? 'focus:border-emerald-500 focus:ring-emerald-500/10 dark:focus:ring-emerald-500/20' : 'focus:border-rose-500 focus:ring-rose-500/10 dark:focus:ring-rose-500/20',
   };
 
   const handleConfirm = () => {
-    // Optional logic: Force remarks if rejecting
-    if (!isApprove && remarks.trim().length === 0) {
-      // You could set a local error state here if you want to enforce remarks on rejection
-      // setError('Remarks are required for rejection.');
-      // return;
-    }
     onConfirm(remarks.trim());
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
       
-      {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm transition-opacity"
         onClick={() => !isProcessing && onClose()}
         aria-hidden="true"
       />
 
-      {/* Modal Content */}
       <div 
-        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="relative bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 border-0 sm:border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]"
         role="dialog"
         aria-modal="true"
       >
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-100 flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${theme.iconBg}`}>
+        <div className="px-6 py-5 sm:py-6 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between bg-slate-50/50 dark:bg-slate-900 shrink-0">
+          <div className="flex items-center gap-4 sm:gap-5">
+            <div className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center shrink-0 border shadow-sm ${theme.iconBg}`}>
               {theme.icon}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{theme.title}</h2>
-              <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{theme.title}</h2>
+              <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 leading-relaxed max-w-[280px]">
                 {theme.description}
               </p>
             </div>
@@ -99,46 +88,44 @@ export default function AdmissionActionModal({
           <button 
             onClick={onClose}
             disabled={isProcessing}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-400 shrink-0 -mr-2 sm:mr-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-6 bg-gray-50/50">
-          <label htmlFor="remarks" className="block text-sm font-semibold text-gray-700 mb-2">
-            Administrator Remarks <span className="text-gray-400 font-normal">{isApprove ? '(Optional)' : '(Recommended)'}</span>
+        <div className="p-6 sm:p-8 bg-white dark:bg-slate-950 overflow-y-auto custom-scrollbar flex-1">
+          <label htmlFor="remarks" className="block text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2.5 ml-1">
+            Administrator Remarks <span className="font-bold text-slate-400 dark:text-slate-500 lowercase ml-1">{isApprove ? '(Optional)' : '(Required)'}</span>
           </label>
           <textarea
             id="remarks"
-            rows={4}
+            rows={5}
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
             placeholder={theme.placeholder}
-            className={`w-full p-3 bg-white border border-gray-200 rounded-xl text-sm transition-all resize-none shadow-sm focus:outline-none focus:ring-4 ${theme.ringColor}`}
+            className={`w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-800 dark:text-slate-200 placeholder:text-slate-400 transition-all resize-y shadow-sm outline-none focus:bg-white dark:focus:bg-slate-950 focus:ring-4 ${theme.ringColor}`}
             disabled={isProcessing}
             autoFocus
           />
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 bg-white border-t border-gray-100 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 sm:py-5 bg-slate-50/50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row items-center justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-50 transition-colors"
+            className="w-full sm:w-auto px-6 py-3.5 sm:py-3 text-sm font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/20 disabled:opacity-50 transition-all active:scale-[0.98]"
           >
-            Cancel
+            Cancel Process
           </button>
           <button
             onClick={handleConfirm}
-            disabled={isProcessing || (!isApprove && remarks.trim() === '')} // Disable if rejecting and no remarks
-            className={`px-5 py-2 text-sm font-bold text-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors flex items-center gap-2 ${theme.buttonColor} disabled:opacity-70 disabled:cursor-not-allowed`}
+            disabled={isProcessing || (!isApprove && remarks.trim() === '')}
+            className={`w-full sm:w-auto px-6 py-3.5 sm:py-3 text-sm font-black rounded-xl shadow-lg focus:outline-none focus:ring-4 transition-all flex items-center justify-center gap-2.5 active:scale-[0.98] ${theme.buttonColor} disabled:opacity-70 disabled:cursor-not-allowed`}
           >
             {isProcessing ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Processing...
+                <Loader2 className="w-5 h-5 animate-spin" /> Processing...
               </>
             ) : (
               isApprove ? 'Confirm Approval' : 'Confirm Rejection'

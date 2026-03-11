@@ -1,4 +1,4 @@
-// src/app/admin/contexts/page.tsx  
+// src/app/admin/contexts/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,14 +7,16 @@ import ContextHeader from './_components/ContextHeader';
 import CreateContextForm from './_components/CreateContextForm';
 import ContextList from './_components/ContextList';
 import { AlertModal, ConfirmModal } from '@/components/ui/dialogs';
+import DebugConsole from '@/components/debug/DebugConsole';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function ContextManagerPage() {
   const [contexts, setContexts] = useState<ProgramContext[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState<any>(null);
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
 
-  // --- Modal States ---
   const [alert, setAlert] = useState<{ open: boolean; title: string; msg: string; type: 'success' | 'danger' | 'info' }>({
     open: false, title: '', msg: '', type: 'info'
   });
@@ -32,13 +34,15 @@ export default function ContextManagerPage() {
   const loadContexts = async () => {
     try {
       setLoading(true);
+      setPageError(null);
       const data = await getContexts(); 
       setContexts(data);
-    } catch (error) {
+    } catch (error: any) {
+      setPageError(error);
       setAlert({
         open: true,
-        title: "Load Error",
-        msg: "Failed to retrieve contexts from the server.",
+        title: "Synchronization Error",
+        msg: "Failed to securely retrieve context tags from the server.",
         type: 'danger'
       });
     } finally {
@@ -57,15 +61,15 @@ export default function ContextManagerPage() {
       loadContexts();
       setAlert({
         open: true,
-        title: "Success",
-        msg: "Context tag created successfully.",
+        title: "Tag Generated",
+        msg: "The context tag was successfully created and distributed.",
         type: 'success'
       });
-    } catch (error) {
+    } catch (error: any) {
       setAlert({
         open: true,
-        title: "Creation Failed",
-        msg: "There was an error creating the context tag.",
+        title: "Generation Failed",
+        msg: error.message || "An unexpected error occurred while creating the tag.",
         type: 'danger'
       });
     } finally {
@@ -73,7 +77,6 @@ export default function ContextManagerPage() {
     }
   };
 
-  // Trigger the Confirm Modal instead of window.confirm
   const initiateDelete = (id: number) => {
     setConfirmDelete({ open: true, id });
   };
@@ -86,12 +89,12 @@ export default function ContextManagerPage() {
       await deleteContext(confirmDelete.id);
       setConfirmDelete({ open: false, id: null });
       loadContexts();
-    } catch (error) {
+    } catch (error: any) {
       setConfirmDelete({ open: false, id: null });
       setAlert({
         open: true,
-        title: "Delete Failed",
-        msg: "Failed to delete context. It may still be linked to active resources.",
+        title: "Removal Failed",
+        msg: error.message || "Failed to delete context. It may still be bound to active resources.",
         type: 'danger'
       });
     } finally {
@@ -99,8 +102,27 @@ export default function ContextManagerPage() {
     }
   };
 
+  if (pageError) {
+    return (
+      <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 flex items-center gap-3">
+            <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10" /> Subsystem Exception
+          </h1>
+          <button 
+            onClick={loadContexts}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-lg transition-transform active:scale-95 focus:outline-none focus:ring-4 focus:ring-slate-900/20 dark:focus:ring-white/20 w-full sm:w-auto"
+          >
+            <RefreshCw className="w-5 h-5" /> Retry Fetch
+          </button>
+        </div>
+        <DebugConsole error={pageError} />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6 pb-20">
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto space-y-6 sm:space-y-8 pb-24 animate-in fade-in duration-500">
       <ContextHeader isLoading={loading} onRefresh={loadContexts} />
       
       <CreateContextForm 
@@ -113,11 +135,9 @@ export default function ContextManagerPage() {
       <ContextList 
         contexts={contexts} 
         isLoading={loading} 
-        onDelete={initiateDelete} // Now triggers our modal
+        onDelete={initiateDelete}
       />
 
-      {/* --- UI Modals --- */}
-      
       <AlertModal 
         isOpen={alert.open}
         title={alert.title}
@@ -128,9 +148,9 @@ export default function ContextManagerPage() {
 
       <ConfirmModal 
         isOpen={confirmDelete.open}
-        title="Delete Context"
-        message="Are you sure you want to delete this context? This might affect resources currently tagged with it."
-        confirmText="Delete Tag"
+        title="Destroy Context Tag?"
+        message="Are you sure you want to permanently delete this context tag? Resources bound to this tag may lose categorical structure."
+        confirmText="Confirm Destruction"
         type="danger"
         isLoading={isDeleting}
         onClose={() => setConfirmDelete({ open: false, id: null })}

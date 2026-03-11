@@ -9,18 +9,14 @@ import {
   sendIndividualEmail,
   QueuedEmail
 } from '@/services/emails';
-import { Mail, Send, AlertCircle, Clock, CheckCircle, RefreshCw } from 'lucide-react';
-
-// Import your beautiful new modal
+import { Mail, Send, AlertCircle, Clock, CheckCircle, RefreshCw, AlertTriangle, Inbox } from 'lucide-react';
 import { AlertModal } from '@/components/ui/dialogs';
+import DebugConsole from '@/components/debug/DebugConsole';
 
-// ==========================================
-// LOCAL COMPONENT: Email Queue List
-// ==========================================
 function EmailQueueList({ 
   refreshTrigger, 
   onEmailSent,
-  showAlert // Passed down from parent to use the central modal
+  showAlert
 }: { 
   refreshTrigger: number, 
   onEmailSent: () => void,
@@ -29,14 +25,16 @@ function EmailQueueList({
   const [emails, setEmails] = useState<QueuedEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingId, setSendingId] = useState<number | null>(null);
+  const [listError, setListError] = useState<any>(null);
 
   const fetchEmails = useCallback(async () => {
     try {
       setLoading(true);
+      setListError(null);
       const data = await getEmailList();
       setEmails(data);
-    } catch (err) {
-      console.error("Failed to fetch email list", err);
+    } catch (err: any) {
+      setListError(err);
     } finally {
       setLoading(false);
     }
@@ -57,123 +55,149 @@ function EmailQueueList({
         "success"
       );
 
-      // Wait 2 seconds before refreshing to give the background thread time to finish
       setTimeout(() => {
         fetchEmails(); 
         onEmailSent(); 
       }, 2000);
 
-    } catch (error) {
-      console.error("Failed to send email", error);
-      showAlert("Sending Failed", "Failed to initiate email delivery. Please try again.", "danger");
+    } catch (error: any) {
+      showAlert("Sending Failed", error.message || "Failed to initiate email delivery. Please try again.", "danger");
     } finally {
       setSendingId(null);
     }
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500 animate-pulse bg-white rounded-xl shadow-sm border border-gray-100 mt-8">Loading email list...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm mt-8 gap-4">
+        <RefreshCw className="w-10 h-10 text-indigo-500 animate-spin" />
+        <p className="font-bold tracking-widest uppercase text-xs sm:text-sm text-slate-400 animate-pulse">Syncing Outbox...</p>
+      </div>
+    );
+  }
+
+  if (listError) {
+    return (
+      <div className="mt-8 animate-in fade-in duration-500">
+        <DebugConsole error={listError} />
+      </div>
+    );
   }
 
   if (emails.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mt-8 text-center">
-        <p className="text-gray-500">No emails found in the queue.</p>
+      <div className="flex flex-col items-center justify-center py-16 px-4 bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800 shadow-sm mt-8 text-center">
+        <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-full mb-4">
+          <Inbox className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 dark:text-slate-600" />
+        </div>
+        <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Outbox Empty</p>
+        <p className="text-slate-500 dark:text-slate-400 font-medium text-sm sm:text-base">No emails are currently waiting in the dispatch queue.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-8 overflow-hidden">
-      <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-        <h3 className="text-lg font-bold text-gray-800">Individual Dispatch</h3>
-        <p className="text-sm text-gray-500">Showing recent emails</p>
+    <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 mt-8 overflow-hidden transition-colors">
+      <div className="p-5 sm:p-6 lg:p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-800/30">
+        <div className="flex items-center gap-3">
+          <div className="p-2 sm:p-2.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+            <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">Individual Dispatch</h3>
+            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Recent items in the delivery pipeline</p>
+          </div>
+        </div>
       </div>
 
-      {/* MOBILE VIEW */}
-      <div className="md:hidden flex flex-col divide-y divide-gray-100">
+      <div className="md:hidden flex flex-col divide-y divide-slate-100 dark:divide-slate-800/80">
         {emails.map((email) => (
-          <div key={email.id} className="p-4 space-y-3">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="font-medium text-gray-900 text-sm truncate max-w-[200px]">{email.recipient}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{new Date(email.created_at).toLocaleDateString()}</p>
+          <div key={email.id} className="p-5 space-y-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+            <div className="flex justify-between items-start gap-3">
+              <div className="min-w-0">
+                <p className="font-bold text-slate-900 dark:text-white text-sm truncate">{email.recipient}</p>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-widest">
+                  {new Date(email.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                </p>
               </div>
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                email.status === 'sent' ? 'bg-green-100 text-green-700' :
-                email.status === 'failed' ? 'bg-red-100 text-red-700' :
-                'bg-amber-100 text-amber-700'
+              <span className={`text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest shrink-0 border ${
+                email.status === 'sent' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:text-emerald-400' :
+                email.status === 'failed' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800/50 dark:text-rose-400' :
+                'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800/50 dark:text-amber-400'
               }`}>
-                {email.status.charAt(0).toUpperCase() + email.status.slice(1)}
+                {email.status}
               </span>
             </div>
             <div>
-              <p className="text-sm text-gray-700 truncate">{email.subject}</p>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 line-clamp-2">{email.subject}</p>
               {email.error_message && email.status === 'failed' && (
-                <p className="text-xs text-red-500 mt-1 truncate">{email.error_message}</p>
+                <div className="mt-2 p-2.5 bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 rounded-lg">
+                  <p className="text-xs font-bold text-rose-600 dark:text-rose-400 break-words line-clamp-3">{email.error_message}</p>
+                </div>
               )}
             </div>
             <button
               onClick={() => handleSendIndividual(email.id)}
               disabled={sendingId === email.id || email.status === 'sent'}
-              className="w-full mt-2 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium rounded-lg border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm font-black rounded-xl border border-slate-200 dark:border-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm focus:outline-none focus:ring-4 focus:ring-slate-500/20 active:scale-[0.98]"
             >
               {sendingId === email.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {email.status === 'failed' ? 'Retry Sending' : 'Send Now'}
+              {email.status === 'failed' ? 'Retry Sending' : 'Dispatch Now'}
             </button>
           </div>
         ))}
       </div>
 
-      {/* DESKTOP VIEW */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left text-sm text-gray-600">
-          <thead className="bg-gray-50 text-gray-700 font-medium border-b border-gray-100">
+      <div className="hidden md:block overflow-x-auto custom-scrollbar">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 backdrop-blur-sm sticky top-0">
             <tr>
-              <th className="px-6 py-4">Recipient</th>
-              <th className="px-6 py-4">Subject</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Date</th>
-              <th className="px-6 py-4 text-right">Action</th>
+              <th className="p-5 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap w-[20%]">Recipient</th>
+              <th className="p-5 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap w-[40%]">Subject payload</th>
+              <th className="p-5 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">Status</th>
+              <th className="p-5 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">Timestamp</th>
+              <th className="p-5 text-right text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
             {emails.map((email) => (
-              <tr key={email.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 font-medium text-gray-900">{email.recipient}</td>
-                <td className="px-6 py-4">
-                  <div className="max-w-[250px] truncate">{email.subject}</div>
+              <tr key={email.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
+                <td className="p-5 font-bold text-sm text-slate-900 dark:text-white truncate max-w-[200px]">{email.recipient}</td>
+                <td className="p-5">
+                  <div className="max-w-[300px] lg:max-w-[400px] truncate text-sm font-medium text-slate-700 dark:text-slate-300">{email.subject}</div>
                   {email.error_message && email.status === 'failed' && (
-                    <div className="text-xs text-red-500 mt-1 truncate max-w-[250px]">{email.error_message}</div>
+                    <div className="text-xs font-bold text-rose-500 dark:text-rose-400 mt-1.5 truncate max-w-[300px] lg:max-w-[400px] bg-rose-50 dark:bg-rose-900/20 px-2 py-1 rounded border border-rose-100 dark:border-rose-800/50 inline-block">
+                      {email.error_message}
+                    </div>
                   )}
                 </td>
-                <td className="px-6 py-4">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1.5 ${
-                    email.status === 'sent' ? 'bg-green-100 text-green-700' :
-                    email.status === 'failed' ? 'bg-red-100 text-red-700' :
-                    'bg-amber-100 text-amber-700'
+                <td className="p-5">
+                  <span className={`text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest inline-flex items-center gap-1.5 border ${
+                    email.status === 'sent' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:text-emerald-400' :
+                    email.status === 'failed' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800/50 dark:text-rose-400' :
+                    'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800/50 dark:text-amber-400'
                   }`}>
                     {email.status === 'sent' ? <CheckCircle className="w-3 h-3"/> : 
                      email.status === 'failed' ? <AlertCircle className="w-3 h-3"/> : 
                      <Clock className="w-3 h-3"/>}
-                    {email.status.charAt(0).toUpperCase() + email.status.slice(1)}
+                    {email.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {new Date(email.created_at).toLocaleDateString()}
+                <td className="p-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                  {new Date(email.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="p-5 text-right">
                   <button
                     onClick={() => handleSendIndividual(email.id)}
                     disabled={sendingId === email.id || email.status === 'sent'}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all text-xs font-black uppercase tracking-widest shadow-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-indigo-500/20 active:scale-95"
                   >
                     {sendingId === email.id ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
                     ) : (
                       <Send className="w-4 h-4" />
                     )}
-                    {email.status === 'failed' ? 'Retry' : 'Send'}
+                    <span className="hidden xl:inline">{email.status === 'failed' ? 'Retry' : 'Dispatch'}</span>
                   </button>
                 </td>
               </tr>
@@ -185,21 +209,16 @@ function EmailQueueList({
   );
 }
 
-
-// ==========================================
-// MAIN COMPONENT: Email Queue Page
-// ==========================================
 export default function EmailQueuePage() {
   const [status, setStatus] = useState<QueueStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState<any>(null);
   
-  // Controls the spam-prevention disabled state
   const [isCoolingDown, setIsCoolingDown] = useState(false); 
   
   const [batchLimit, setBatchLimit] = useState<number>(20);
   const [listRefreshTrigger, setListRefreshTrigger] = useState(0);
 
-  // Modal State
   const [modal, setModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -220,10 +239,11 @@ export default function EmailQueuePage() {
   const loadStatus = async () => {
     try {
       setLoading(true);
+      setPageError(null);
       const data = await getQueueStatus();
       setStatus(data);
     } catch (err: any) {
-      console.error(err);
+      setPageError(err);
     } finally {
       setLoading(false);
     }
@@ -236,7 +256,6 @@ export default function EmailQueuePage() {
     }
 
     try {
-      // Disable button instantly to prevent double clicks
       setIsCoolingDown(true); 
       
       await dispatchEmailBatch(batchLimit);
@@ -247,12 +266,10 @@ export default function EmailQueuePage() {
         "success"
       );
       
-      // Wait 3 seconds before reloading data. This gives the background thread
-      // on the server a head start so the numbers actually change when we refresh!
       setTimeout(() => {
         loadStatus();
         setListRefreshTrigger(prev => prev + 1);
-        setIsCoolingDown(false); // Re-enable the button after cooldown
+        setIsCoolingDown(false); 
       }, 3000);
       
     } catch (err: any) {
@@ -261,21 +278,45 @@ export default function EmailQueuePage() {
     }
   };
 
-  if (loading && !status) {
-    return <div className="p-8 text-center text-gray-500 animate-pulse">Checking Mail Server...</div>;
+  if (loading && !status && !pageError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400 gap-4">
+        <Mail className="w-10 h-10 sm:w-12 sm:h-12 animate-pulse text-indigo-500" />
+        <p className="font-bold tracking-widest uppercase text-xs sm:text-sm animate-pulse">Contacting Mail Server...</p>
+      </div>
+    );
+  }
+
+  if (pageError) {
+    return (
+      <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto animate-in fade-in duration-500">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 flex items-center gap-3">
+            <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10" /> Server Exception
+          </h1>
+          <button 
+            onClick={loadStatus}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-lg transition-transform active:scale-95 focus:outline-none focus:ring-4 focus:ring-slate-900/20 dark:focus:ring-white/20 w-full sm:w-auto"
+          >
+            <RefreshCw className="w-5 h-5" /> Retry Connection
+          </button>
+        </div>
+        <DebugConsole error={pageError} />
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300">
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-500 pb-24">
       
-      <div className="flex items-center justify-between border-b border-gray-100 pb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-lg">
-            <Mail className="w-6 h-6 text-blue-700" />
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 border-b border-slate-200 dark:border-slate-800 pb-6 sm:pb-8">
+        <div className="flex items-center gap-4 sm:gap-5">
+          <div className="p-3 sm:p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl shrink-0 shadow-inner">
+            <Mail className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600 dark:text-indigo-400" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Email Queue Dispatcher</h1>
-            <p className="text-gray-500 text-sm">Monitor and batch-process pending system emails safely.</p>
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">Queue Dispatcher</h1>
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium">Monitor and batch-process pending system emails securely.</p>
           </div>
         </div>
         <button 
@@ -284,86 +325,97 @@ export default function EmailQueuePage() {
             setListRefreshTrigger(prev => prev + 1);
           }}
           disabled={loading || isCoolingDown}
-          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-2 p-3 sm:px-5 sm:py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all disabled:opacity-50 shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/20 active:scale-[0.98] w-full sm:w-auto"
           title="Refresh Queue Status"
         >
           <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          <span className="sm:hidden">Refresh Data</span>
         </button>
       </div>
 
-      {/* Stats Dashboard */}
       {status && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className="p-4 bg-amber-50 text-amber-600 rounded-lg"><Clock className="w-6 h-6"/></div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Pending</p>
-              <p className="text-3xl font-bold text-gray-700">{status.pending_emails ?? 'N/A'}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 lg:p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col items-center sm:items-start sm:flex-row gap-4 sm:gap-5 transition-transform hover:-translate-y-1 duration-300 group">
+            <div className="p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl group-hover:scale-110 transition-transform">
+              <Clock className="w-6 h-6 sm:w-8 sm:h-8"/>
+            </div>
+            <div className="text-center sm:text-left pt-1">
+              <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1.5">Pending</p>
+              <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-none">{status.pending_emails ?? '0'}</p>
             </div>
           </div>
           
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className="p-4 bg-green-50 text-green-600 rounded-lg"><CheckCircle className="w-6 h-6"/></div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Sent</p>
-              <p className="text-3xl font-bold text-gray-700">{status.total_sent ?? 'N/A'}</p>
+          <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 lg:p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col items-center sm:items-start sm:flex-row gap-4 sm:gap-5 transition-transform hover:-translate-y-1 duration-300 group">
+            <div className="p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl group-hover:scale-110 transition-transform">
+              <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8"/>
+            </div>
+            <div className="text-center sm:text-left pt-1">
+              <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1.5">Dispatched</p>
+              <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-none">{status.total_sent ?? '0'}</p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className="p-4 bg-red-50 text-red-600 rounded-lg"><AlertCircle className="w-6 h-6"/></div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Failed</p>
-              <p className="text-3xl font-bold text-gray-700">{status.failed_count ?? 'N/A'}</p>
+          <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 lg:p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col items-center sm:items-start sm:flex-row gap-4 sm:gap-5 transition-transform hover:-translate-y-1 duration-300 group">
+            <div className="p-3 sm:p-4 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-2xl group-hover:scale-110 transition-transform">
+              <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8"/>
+            </div>
+            <div className="text-center sm:text-left pt-1">
+              <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1.5">Failed</p>
+              <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-none">{status.failed_count ?? '0'}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Manual Dispatch Control Panel */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center max-w-2xl mx-auto mt-8">
-        <Send className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-gray-800 mb-2">Manual Dispatch Control</h2>
-        <p className="text-gray-500 text-sm mb-6">
-          Emails are processed securely in the background. A batch size of 20-50 is recommended.
-        </p>
-
-        <div className="flex items-center justify-center gap-4 max-w-xs mx-auto">
-          <div className="flex-1">
-            <label className="sr-only">Batch Limit</label>
-            <input 
-              type="number" 
-              min="1" 
-              max="100"
-              value={batchLimit}
-              onChange={(e) => setBatchLimit(Number(e.target.value))}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 outline-none text-center font-bold text-lg"
-            />
-          </div>
-          <button
-            onClick={handleDispatch}
-            disabled={isCoolingDown || (status?.pending_emails === 0)}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isCoolingDown ? 'Processing...' : 'Dispatch Batch'}
-          </button>
-        </div>
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-lg shadow-slate-200/40 dark:shadow-none border border-slate-200 dark:border-slate-800 p-6 sm:p-10 text-center max-w-2xl mx-auto mt-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         
-        {status?.pending_emails === 0 && (
-          <p className="text-sm text-green-600 font-medium mt-4">
-            🎉 The queue is currently empty. All caught up!
+        <div className="relative z-10">
+          <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-indigo-100 dark:border-indigo-800/50">
+            <Send className="w-10 h-10 text-indigo-600 dark:text-indigo-400 ml-1" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Manual Dispatch Engine</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-medium text-sm sm:text-base mb-8 max-w-sm mx-auto leading-relaxed">
+            Emails are processed securely via background threads. A batch configuration of 20-50 units is optimal.
           </p>
-        )}
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-md mx-auto">
+            <div className="w-full sm:w-1/3 relative group">
+              <label className="absolute -top-2.5 left-3 bg-white dark:bg-slate-900 px-1.5 text-[10px] font-black uppercase tracking-widest text-indigo-500 z-10">Batch Size</label>
+              <input 
+                type="number" 
+                min="1" 
+                max="100"
+                value={batchLimit}
+                onChange={(e) => setBatchLimit(Number(e.target.value))}
+                className="w-full px-4 py-4 sm:py-3.5 bg-transparent border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-center font-black text-lg sm:text-xl text-slate-800 dark:text-slate-100 transition-all relative z-0"
+              />
+            </div>
+            <button
+              onClick={handleDispatch}
+              disabled={isCoolingDown || (status?.pending_emails === 0)}
+              className="w-full sm:w-2/3 px-6 py-4 sm:py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/20 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-indigo-500/30"
+            >
+              {isCoolingDown ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+              {isCoolingDown ? 'Executing...' : 'Trigger Dispatch'}
+            </button>
+          </div>
+          
+          {status?.pending_emails === 0 && (
+            <div className="mt-8 inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800/50 animate-in fade-in zoom-in-95">
+              <CheckCircle className="w-4 h-4" />
+              <span className="text-sm font-bold">Queue is optimal. All tasks completed.</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Individual Email List */}
       <EmailQueueList 
         refreshTrigger={listRefreshTrigger} 
         onEmailSent={loadStatus} 
         showAlert={showAlert}
       />
 
-      {/* Centralized Alert Modal */}
       <AlertModal
         isOpen={modal.isOpen}
         onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
